@@ -74,8 +74,81 @@ class CPU:
         self.A = 0
         self.X = 0
         self.Y = 0
-        self.PC = (self.RAM[0xFFFD] << 8) | self.RAM[0xFFFC]
+        self.PC = 0xC000
+        # self.PC = (self.RAM[0xFFFD] << 8) | self.RAM[0xFFFC]
+        # import pdb pdb.set_trace()
         self.PS = 0x24
+
+    def log_clock(self, opcode_id, first, second):
+        opcode = OP(*OP_MAPPING[opcode_id])
+
+        logline = "0x{:04X}  {:02X} {:02X} {:02X}  {:03s}{:28s}A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}".format(
+            self.PC,
+            opcode_id,
+            first,
+            second,
+            opcode.name,
+            "",
+            self.A,
+            self.X,
+            self.Y,
+            self.PS,
+            self.SP
+        )
+
+        print(logline)
+        with open("emulator.log", "a") as f:
+            f.write(logline)
+
+
+    def resolve_address(self, first, second, addr_mode):
+        high = 0
+        low = 0
+        address = 0
+
+        if addr_mode == ACCUMULATOR:
+            return self.A
+        if addr_mode == IMMEDIATE:
+            return first
+        if addr_mode == RELATIVE:
+            return first
+        if addr_mode == ZEROPAGE:
+            return first % 256
+        if addr_mode == ZEROPAGEX:
+            return (first + self.X) % 256
+        if addr_mode == ZEROPAGEY:
+            return (first + self.Y) % 256
+        if addr_mode == ABSOLUTE:
+            address = first
+            address = (second << 8) |address
+            return address
+        if addr_mode == ABSOLUTEX:
+            address = first
+            address = (second << 8) |address
+            return address + self.X
+        if addr_mode == ABSOLUTEY:
+            address = first
+            address = (second << 8) |address
+            return address + self.Y
+        if addr_mode == INDIRECTX:
+            return (self.RAM[(first + self.X + 1) & 0xFF] << 8) | self.RAM[(first + self.X) & 0xFF]
+        if addr_mode == INDIRECTY:
+            high = self.RAM[(first + 1) & 0xFF] << 8
+            low = self.RAM[first & 0xFF]
+            return (high | low) + Y
+        if addr_mode == INDIRECT:
+            if (first == 0xFF):
+                high = (second << 8)
+                low = (second << 8) | 0x00FF
+                address = (self.RAM[high] << 8) | self.RAM[low]
+            else:
+                high = second
+                high <<= 8
+                low = first
+                address = (self.RAM[(high | low) + 1] << 8) | self.RAM[(high | low)]
+
+            return address
+
 
     def is_jump(self, opcode):
         if opcode.name in {"BRK", "JMP", "JSR", "RTI"}:
@@ -83,7 +156,8 @@ class CPU:
         return False
 
     def clock(self):
-        opcode = OP(*OP_MAPPING[self.RAM[self.PC]])
+        opcode_id = self.RAM[self.PC]
+        opcode = OP(*OP_MAPPING[opcode_id])
     
         if (opcode.cycles == 0):
             self.PC += 1
@@ -92,9 +166,11 @@ class CPU:
         first = (self.RAM[self.PC + 1])
         second = (self.RAM[self.PC + 2])
 
+        self.log_clock(opcode_id, first, second)
+
         getattr(self, opcode.name)(first, second, opcode.mode)
 
-        if self.is_jump(opcode) and (self.PC > 0):
+        if (not self.is_jump(opcode)) and (self.PC > 0):
             self.PC += opcode.byte_size
 
         return opcode.cycles
@@ -181,7 +257,7 @@ class CPU:
         pass
 
     def JMP(self, first, second, addr_mode):
-        pass
+        self.PC = self.resolve_address(first, second, addr_mode)
 
     def JSR(self, first, second, addr_mode):
         pass
