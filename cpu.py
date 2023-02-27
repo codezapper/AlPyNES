@@ -1,4 +1,6 @@
 from collections import namedtuple
+from utils import check_bit, clear_bit, set_bit
+
 
 IMPLICIT = 0
 ACCUMULATOR = 1
@@ -175,6 +177,34 @@ class CPU:
 
         return opcode.cycles
 
+
+    def read(self, first, second, addr_mode):
+        value = self.resolve_address(first, second, addr_mode)
+
+        if addr_mode in [ACCUMULATOR, IMMEDIATE, RELATIVE]:
+            return value
+    
+        if addr_mode in [ ZEROPAGE, ZEROPAGEX, ZEROPAGEY, ABSOLUTE, ABSOLUTEX, ABSOLUTEY, INDIRECTX, INDIRECTY, INDIRECT ]:
+            if ((value >= 0) and (value <= 0x1FFF)):
+                value &= 0x07FF
+
+            if ((value >= 0x2000) and (value <= 0x3FFF)):
+                pass
+                # return ppu_read(value);
+            elif (value == 0x4016):
+                pass
+                # TODO : handle controller
+                # if (poll_controller1 >= 0) {
+                #     unsigned char ret = readController1(poll_controller1++);
+                #     if (poll_controller1 > 7) {
+                #         poll_controller1 = -1;
+                #     }
+                #     return ret | 0x40;
+                # }
+                # return 0x40;
+            # TODO: Do not read RAM directly, but use a separate function to support mappers
+            return self.RAM[value]
+
     def ADC(self, first, second, addr_mode):
         pass
 
@@ -266,7 +296,15 @@ class CPU:
         pass
 
     def LDX(self, first, second, addr_mode):
-        pass
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+
+        X  = self.read(first, second, addr_mode)
+        if (0 == X):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(X, 7)):
+            self.PS = set_bit(self.PS, self.NF)
 
     def LDY(self, first, second, addr_mode):
         pass
