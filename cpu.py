@@ -102,6 +102,29 @@ class CPU:
         with open("emulator.log", "a") as f:
             f.write(logline)
 
+    def stack_push(self, value):
+        self.RAM[self.SP + 0x100] = value
+        self.SP -= 1
+
+    def stack_pop(self):
+        self.SP += 1
+        value = self.RAM[self.SP + 0x100]
+        return value
+
+    def push_PC(self):
+        high = self.PC >> 8
+        low = (self.PC << 8) >> 8
+
+        self.stack_push(high)
+        self.stack_push(low)
+
+    def pop_PC(self):
+        low = self.stack_pop()
+        high = self.stack_pop()
+
+        PC = high
+        PC <<= 8
+        PC |= low
 
     def resolve_address(self, first, second, addr_mode):
         high = 0
@@ -178,6 +201,21 @@ class CPU:
         return opcode.cycles
 
 
+    def write(self, first, second, addr_mode, value):
+        if (ACCUMULATOR == addr_mode):
+            self.A = value
+        else:
+            address = self.resolve_address(first, second, addr_mode)
+            if (((address >= 0x2000) and (address <= 0x3FFF)) or (address == 0x4014)):
+                pass
+                #ppu_write(address, value)
+            elif (address == 0x4016):
+                pass
+                #poll_controller1 = value
+            else:
+                self.RAM[address] = value
+
+
     def read(self, first, second, addr_mode):
         value = self.resolve_address(first, second, addr_mode)
 
@@ -190,20 +228,21 @@ class CPU:
 
             if ((value >= 0x2000) and (value <= 0x3FFF)):
                 pass
-                # return ppu_read(value);
+                # return ppu_read(value)
             elif (value == 0x4016):
                 pass
                 # TODO : handle controller
                 # if (poll_controller1 >= 0) {
-                #     unsigned char ret = readController1(poll_controller1++);
+                #     ret = readController1(poll_controller1++)
                 #     if (poll_controller1 > 7) {
-                #         poll_controller1 = -1;
+                #         poll_controller1 = -1
                 #     }
-                #     return ret | 0x40;
+                #     return ret | 0x40
                 # }
-                # return 0x40;
-            # TODO: Do not read RAM directly, but use a separate function to support mappers
-            return self.RAM[value]
+                # return 0x40
+            else:
+                # TODO: Do not read RAM directly, but use a separate function to support mappers
+                return self.RAM[value]
 
     def ADC(self, first, second, addr_mode):
         pass
@@ -218,7 +257,8 @@ class CPU:
         pass
 
     def BCS(self, first, second, addr_mode):
-        pass
+        if (check_bit(self.PS, self.CF) == 1):
+            self.PC += self.resolve_address(first, second, addr_mode)
 
     def BEQ(self, first, second, addr_mode):
         pass
@@ -245,7 +285,7 @@ class CPU:
         pass
 
     def CLC(self, first, second, addr_mode):
-        pass
+        self.PS = clear_bit(self.PS, self.CF)
 
     def CLD(self, first, second, addr_mode):
         pass
@@ -290,7 +330,9 @@ class CPU:
         self.PC = self.resolve_address(first, second, addr_mode)
 
     def JSR(self, first, second, addr_mode):
-        pass
+        self.PC += 2
+        self.push_PC()
+        self.PC = self.resolve_address(first, second, addr_mode)
 
     def LDA(self, first, second, addr_mode):
         pass
@@ -299,11 +341,11 @@ class CPU:
         self.PS = clear_bit(self.PS, self.ZF)
         self.PS = clear_bit(self.PS, self.NF)
 
-        X  = self.read(first, second, addr_mode)
-        if (0 == X):
+        self.X  = self.read(first, second, addr_mode)
+        if (0 == self.X):
             self.PS = set_bit(self.PS, self.ZF)
 
-        if (check_bit(X, 7)):
+        if (check_bit(self.X, 7)):
             self.PS = set_bit(self.PS, self.NF)
 
     def LDY(self, first, second, addr_mode):
@@ -346,7 +388,7 @@ class CPU:
         pass
 
     def SEC(self, first, second, addr_mode):
-        pass
+        self.PS = set_bit(self.PS, self.CF)
 
     def SED(self, first, second, addr_mode):
         pass
@@ -358,7 +400,7 @@ class CPU:
         pass
 
     def STX(self, first, second, addr_mode):
-        pass
+        self.write(first, second, addr_mode, self.X)
 
     def STY(self, first, second, addr_mode):
         pass
