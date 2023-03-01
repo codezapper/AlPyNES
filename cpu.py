@@ -365,22 +365,87 @@ class CPU:
         self.PS = clear_bit(self.PS, self.OF)
 
     def CMP(self, first, second, addr_mode):
-        pass
+        self.PS = clear_bit(self.PS, self.CF)
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+
+        value = self.read(first, second, addr_mode) & 0xFF
+
+        if (self.A >= value):
+            self.PS = set_bit(self.PS, self.CF)
+
+        if (self.A == value):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(self.A-value, 7) == 1):
+            self.PS = set_bit(self.PS, self.NF)
 
     def CPX(self, first, second, addr_mode):
-        pass
+        self.PS = clear_bit(self.PS, self.CF)
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+
+        value = self.read(first, second, addr_mode) & 0xFF
+
+        if (self.X >= value):
+            self.PS = set_bit(self.PS, self.CF)
+
+        if (self.X == value):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(self.X-value, 7) == 1):
+            self.PS = set_bit(self.PS, self.NF)
 
     def CPY(self, first, second, addr_mode):
-        pass
+        self.PS = clear_bit(self.PS, self.CF)
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+
+        value = self.read(first, second, addr_mode) & 0xFF
+
+        if (self.Y >= value):
+            self.PS = set_bit(self.PS, self.CF)
+
+        if (self.Y == value):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(self.Y-value, 7) == 1):
+            self.PS = set_bit(self.PS, self.NF)
 
     def DEC(self, first, second, addr_mode):
-        pass
+        value = (self.read(first, second, addr_mode) & 0xFF) - 1
+
+        self.write(first, second, addr_mode, value)
+
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+        if (0 == self.read(first, second, addr_mode)):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(value, 7) == 1):
+            self.PS = set_bit(self.PS, self.NF)
 
     def DEX(self, first, second, addr_mode):
-        pass
+        self.X -= 1
+
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+        if (0 == self.X):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(self.X, 7) == 1):
+            self.PS = set_bit(self.PS, self.NF)
 
     def DEY(self, first, second, addr_mode):
-        pass
+        self.Y -= 1
+
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+        if (0 == self.Y):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(self.Y, 7) == 1):
+            self.PS = set_bit(self.PS, self.NF)
 
     def EOR(self, first, second, addr_mode):
         pass
