@@ -308,6 +308,8 @@ class CPU:
             self.PC += self.resolve_address(first, second, addr_mode)
 
     def BIT(self, first, second, addr_mode):
+        # if self.PC == 0xc782:
+        #     import pdb; pdb.set_trace()
         value = self.read(first, second, addr_mode)
         result = self.A & value
 
@@ -502,7 +504,19 @@ class CPU:
         self.PC = self.resolve_address(first, second, addr_mode)
 
     def LDA(self, first, second, addr_mode):
-        pass
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+
+        self.A = self.read(first, second, addr_mode)
+        if (self.A == 0x7C):
+            # Only for debugging
+            pass
+
+        if (0 == self.A):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(self.A, 7)):
+            self.PS = set_bit(self.PS, self.NF)
 
     def LDX(self, first, second, addr_mode):
         self.PS = clear_bit(self.PS, self.ZF)
@@ -564,13 +578,13 @@ class CPU:
         pass
 
     def STA(self, first, second, addr_mode):
-        pass
+        self.write(first, second, addr_mode, self.A)
 
     def STX(self, first, second, addr_mode):
         self.write(first, second, addr_mode, self.X)
 
     def STY(self, first, second, addr_mode):
-        pass
+        self.write(first, second, addr_mode, self.Y)
 
     def TAX(self, first, second, addr_mode):
         pass
