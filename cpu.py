@@ -266,23 +266,63 @@ class CPU:
         self.A = result & 0xFF
 
     def AND(self, first, second, addr_mode):
-        pass
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+
+        self.A &= self.read(first, second, addr_mode)
+        if (0 == self.A):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(self.A, 7)):
+            self.PS = set_bit(self.PS, self.NF)
 
     def ASL(self, first, second, addr_mode):
-        pass
+        self.PS = clear_bit(self.PS, self.CF)
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+
+        value = self.read(first, second, addr_mode) & 0xFF
+
+        if (check_bit(value, 7) == 1):
+            self.PS = set_bit(self.PS, self.CF)
+
+        value <<= 1        
+        if (0 == value):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(value, 7)):
+            self.PS = set_bit(self.PS, self.NF)
+
+        self.write(first, second, addr_mode, value)
 
     def BCC(self, first, second, addr_mode):
-        pass
+        if (check_bit(self.PS, self.CF) == 0):
+            self.PC += self.resolve_address(first, second, addr_mode)
 
     def BCS(self, first, second, addr_mode):
         if (check_bit(self.PS, self.CF) == 1):
             self.PC += self.resolve_address(first, second, addr_mode)
 
     def BEQ(self, first, second, addr_mode):
-        pass
+        if (check_bit(self.PS, self.ZF) == 1):
+            self.PC += self.resolve_address(first, second, addr_mode)
 
     def BIT(self, first, second, addr_mode):
-        pass
+        value = self.read(first, second, addr_mode)
+        result = self.A & value
+
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+        self.PS = clear_bit(self.PS, self.OF)
+
+        if (0 == result):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(value, 7)):
+            self.PS = set_bit(self.PS, self.NF)
+
+        if (check_bit(value, 6)):
+            self.PS = set_bit(self.PS, self.OF)
 
     def BMI(self, first, second, addr_mode):
         pass
