@@ -448,16 +448,50 @@ class CPU:
             self.PS = set_bit(self.PS, self.NF)
 
     def EOR(self, first, second, addr_mode):
-        pass
+        self.A ^= self.read(first, second, addr_mode)
+
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+        if (0 == self.A):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(self.A, 7) == 1):
+            self.PS = set_bit(self.PS, self.NF)
 
     def INC(self, first, second, addr_mode):
-        pass
+        value = self.read(first, second, addr_mode) + 1
+
+        self.write(first, second, addr_mode, value)
+
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+        if (0 == value):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(value, 7) == 1):
+            self.PS = set_bit(self.PS, self.NF)
 
     def INX(self, first, second, addr_mode):
-        pass
+        self.X += 1
+
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+        if (0 == self.X):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(self.X, 7) == 1):
+            self.PS = set_bit(self.PS, self.NF)
 
     def INY(self, first, second, addr_mode):
-        pass
+        self.Y += 1
+
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+        if (0 == self.Y):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(self.Y, 7) == 1):
+            self.PS = set_bit(self.PS, self.NF)
 
     def JMP(self, first, second, addr_mode):
         self.PC = self.resolve_address(first, second, addr_mode)
