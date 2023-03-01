@@ -577,13 +577,51 @@ class CPU:
         self.stack_push(self.A)
 
     def PHP(self, first, second, addr_mode):
-        pass
+        value = set_bit(self.PS, self.B4)
+        value = set_bit(value, self.B5)
+
+        self.stack_push(value)
 
     def PLA(self, first, second, addr_mode):
-        pass
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+
+        self.A = self.stack_pop()
+
+        if (0 == self.A):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(self.A, 7)):
+            self.PS = set_bit(self.PS, self.NF)
 
     def PLP(self, first, second, addr_mode):
-        pass
+        value = self.stack_pop()
+
+        # Need to ignore B4 and B5
+
+        self.PS = clear_bit(self.PS, 0)
+        self.PS = clear_bit(self.PS, 1)
+        self.PS = clear_bit(self.PS, 2)
+        self.PS = clear_bit(self.PS, 3)
+        self.PS = clear_bit(self.PS, 6)
+        self.PS = clear_bit(self.PS, 7)
+        if (check_bit(value, 0) == 1):
+            self.PS = set_bit(self.PS, 0)
+
+        if (check_bit(value, 1) == 1):
+            self.PS = set_bit(self.PS, 1)
+
+        if (check_bit(value, 2) == 1):
+            self.PS = set_bit(self.PS, 2)
+
+        if (check_bit(value, 3) == 1):
+            self.PS = set_bit(self.PS, 3)
+
+        if (check_bit(value, 6) == 1):
+            self.PS = set_bit(self.PS, 6)
+
+        if (check_bit(value, 7) == 1):
+            self.PS = set_bit(self.PS, 7)
 
     def ROL(self, first, second, addr_mode):
         pass
