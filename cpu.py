@@ -624,28 +624,126 @@ class CPU:
             self.PS = set_bit(self.PS, 7)
 
     def ROL(self, first, second, addr_mode):
-        pass
+        value = self.read(first, second, addr_mode)
+        prev_value = value
+
+        value <<= 1
+
+        if (check_bit(self.PS, self.CF) == 1):
+            value = set_bit(value, 0)
+        else:
+            value = clear_bit(value, 0)
+
+        if (check_bit(prev_value, 7) == 1):
+            self.PS = set_bit(self.PS, self.CF)
+        else:
+            self.PS = clear_bit(self.PS, self.CF)
+
+        if (check_bit(value, 7) == 1):
+            self.PS = set_bit(self.PS, self.NF)
+        else:
+            self.PS = clear_bit(self.PS, self.NF)
+
+        if (0 == value):
+            self.PS = set_bit(self.PS, self.ZF)
+        else:
+            self.PS = clear_bit(self.PS, self.ZF)
+
+        self.write(first, second, addr_mode, value)
 
     def ROR(self, first, second, addr_mode):
-        pass
+        value = self.read(first, second, addr_mode)
+        prev_value = value
+
+        value >>= 1
+
+        if (check_bit(self.PS, self.CF) == 1):
+            value = set_bit(value, 7)
+        else:
+            value = clear_bit(value, 7)
+
+        if (check_bit(prev_value, 0) == 1):
+            self.PS = set_bit(self.PS, self.CF)
+        else:
+            self.PS = clear_bit(self.PS, self.CF)
+
+        if (check_bit(value, 7) == 1):
+            self.PS = set_bit(self.PS, self.NF)
+        else:
+            self.PS = clear_bit(self.PS, self.NF)
+
+        if (0 == value):
+            self.PS = set_bit(self.PS, self.ZF)
+        else:
+            self.PS = clear_bit(self.PS, self.ZF)
+
+        self.write(first, second, addr_mode, value)
 
     def RTI(self, first, second, addr_mode):
-        pass
+        value = self.stack_pop()
+
+        # Need to ignore B4 and B5
+
+        self.PS = clear_bit(self.PS, 0)
+        self.PS = clear_bit(self.PS, 1)
+        self.PS = clear_bit(self.PS, 2)
+        self.PS = clear_bit(self.PS, 3)
+        self.PS = clear_bit(self.PS, 6)
+        self.PS = clear_bit(self.PS, 7)
+        if (check_bit(value, 0) == 1):
+            self.PS = set_bit(self.PS, 0)
+
+        if (check_bit(value, 1) == 1):
+            self.PS = set_bit(self.PS, 1)
+
+        if (check_bit(value, 2) == 1):
+            self.PS = set_bit(self.PS, 2)
+
+        if (check_bit(value, 3) == 1):
+            self.PS = set_bit(self.PS, 3)
+
+        if (check_bit(value, 6) == 1):
+            self.PS = set_bit(self.PS, 6)
+
+        if (check_bit(value, 7) == 1):
+            self.PS = set_bit(self.PS, 7)
+
+        self.pop_PC()
 
     def RTS(self, first, second, addr_mode):
-        pass
+        self.pop_PC()
 
     def SBC(self, first, second, addr_mode):
-        pass
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+        self.PS = clear_bit(self.PS, self.OF)
+
+        value = ~self.read(first, second, addr_mode) & 0xFF
+        result = self.A + value + check_bit(self.PS, self.CF)
+
+        if ((~(self.A ^ value) & (self.A ^ result) & 0x80) > 0):
+            self.PS = set_bit(self.PS, self.OF)
+
+        if (0 == (result & 0xFF)):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(result, 7)):
+            self.PS = set_bit(self.PS, self.NF)
+
+        self.PS = clear_bit(self.PS, self.CF)
+        if (result > 255):
+            self.PS = set_bit(self.PS, self.CF)
+
+        self.A = result & 0xFF
 
     def SEC(self, first, second, addr_mode):
         self.PS = set_bit(self.PS, self.CF)
 
     def SED(self, first, second, addr_mode):
-        pass
+        self.PS = set_bit(self.PS, self.DM)
 
     def SEI(self, first, second, addr_mode):
-        pass
+        self.PS = set_bit(self.PS, self.ID)
 
     def STA(self, first, second, addr_mode):
         self.write(first, second, addr_mode, self.A)
@@ -657,22 +755,67 @@ class CPU:
         self.write(first, second, addr_mode, self.Y)
 
     def TAX(self, first, second, addr_mode):
-        pass
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+
+        self.X = self.A
+
+        if (0 == self.X):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(self.X, 7)):
+            self.PS = set_bit(self.PS, self.NF)
 
     def TAY(self, first, second, addr_mode):
-        pass
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+
+        self.Y = self.A
+
+        if (0 == self.Y):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(self.Y, 7)):
+            self.PS = set_bit(self.PS, self.NF)
 
     def TSX(self, first, second, addr_mode):
-        pass
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+
+        self.X = self.SP
+
+        if (0 == self.X):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(self.X, 7)):
+            self.PS = set_bit(self.PS, self.NF)
 
     def TXA(self, first, second, addr_mode):
-        pass
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+
+        self.A = self.X
+
+        if (0 == self.A):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(self.A, 7)):
+            self.PS = set_bit(self.PS, self.NF)
 
     def TXS(self, first, second, addr_mode):
-        pass
+        self.SP = self.X
 
     def TYA(self, first, second, addr_mode):
-        pass
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+
+        self.A = self.Y
+
+        if (0 == self.A):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(self.A, 7)):
+            self.PS = set_bit(self.PS, self.NF)
 
 
     def ALR(self, first, second, addr_mode):
