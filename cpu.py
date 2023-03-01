@@ -325,34 +325,44 @@ class CPU:
             self.PS = set_bit(self.PS, self.OF)
 
     def BMI(self, first, second, addr_mode):
-        pass
+        if (check_bit(self.PS, self.NF) == 1):
+            self.PC += self.resolve_address(first, second, addr_mode)
 
     def BNE(self, first, second, addr_mode):
-        pass
+        if (check_bit(self.PS, self.ZF) == 0):
+            self.PC += self.resolve_address(first, second, addr_mode)
 
     def BPL(self, first, second, addr_mode):
-        pass
+        if (check_bit(self.PS, self.NF) == 0):
+            self.PC += self.resolve_address(first, second, addr_mode)
 
     def BRK(self, first, second, addr_mode):
-        pass
+        self.PC += 2
+        self.push_PC()
+        self.PC -= 2
+        self.PHP(first, second, addr_mode)
+        self.SEI(first, second, addr_mode)
+        self.PC = (self.RAM[0xFFFF] << 8) | self.RAM[0xFFFE]
 
     def BVC(self, first, second, addr_mode):
-        pass
+        if (check_bit(self.PS, self.OF) == 0):
+            self.PC += self.resolve_address(first, second, addr_mode)
 
     def BVS(self, first, second, addr_mode):
-        pass
+        if (check_bit(self.PS, self.OF) == 1):
+            self.PC += self.resolve_address(first, second, addr_mode)
 
     def CLC(self, first, second, addr_mode):
         self.PS = clear_bit(self.PS, self.CF)
 
     def CLD(self, first, second, addr_mode):
-        pass
+        self.PS = clear_bit(self.PS, self.DM)
 
     def CLI(self, first, second, addr_mode):
-        pass
+        self.PS = clear_bit(self.PS, self.ID)
 
     def CLV(self, first, second, addr_mode):
-        pass
+        self.PS = clear_bit(self.PS, self.OF)
 
     def CMP(self, first, second, addr_mode):
         pass
