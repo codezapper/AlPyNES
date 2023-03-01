@@ -234,8 +234,7 @@ class CPU:
                 #     ret = readController1(poll_controller1++)
                 #     if (poll_controller1 > 7) {
                 #         poll_controller1 = -1
-                #     }
-                #     return ret | 0x40
+                #                 #     return ret | 0x40
                 # }
                 # return 0x40
             else:
@@ -309,7 +308,7 @@ class CPU:
 
     def BIT(self, first, second, addr_mode):
         # if self.PC == 0xc782:
-        #     import pdb; pdb.set_trace()
+        #     import pdb pdb.set_trace()
         value = self.read(first, second, addr_mode)
         result = self.A & value
 
@@ -530,19 +529,52 @@ class CPU:
             self.PS = set_bit(self.PS, self.NF)
 
     def LDY(self, first, second, addr_mode):
-        pass
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+
+        self.Y  = self.read(first, second, addr_mode)
+        if (0 == self.Y):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(self.Y, 7)):
+            self.PS = set_bit(self.PS, self.NF)
 
     def LSR(self, first, second, addr_mode):
-        pass
+        self.PS = clear_bit(self.PS, self.CF)
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+
+        value = self.read(first, second, addr_mode) & 0xFF
+
+        if (check_bit(value, 0) == 1):
+            self.PS = set_bit(self.PS, self.CF)
+
+        value >>= 1
+        
+        if (0 == value):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(value, 7)):
+            self.PS = set_bit(self.PS, self.NF)
+
+        self.write(first, second, addr_mode, value)
 
     def NOP(self, first, second, addr_mode):
         pass
 
     def ORA(self, first, second, addr_mode):
-        pass
+        self.A |= self.read(first, second, addr_mode)
+
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+        if (0 == self.A):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(self.A, 7) == 1):
+            self.PS = set_bit(self.PS, self.NF)
 
     def PHA(self, first, second, addr_mode):
-        pass
+        self.stack_push(self.A)
 
     def PHP(self, first, second, addr_mode):
         pass
