@@ -99,8 +99,6 @@ class CPU:
         )
 
         print(logline)
-        with open("emulator.log", "a") as f:
-            f.write(logline)
 
     def stack_push(self, value):
         self.RAM[self.SP + 0x100] = value
@@ -245,7 +243,27 @@ class CPU:
                 return self.RAM[value]
 
     def ADC(self, first, second, addr_mode):
-        pass
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+        self.PS = clear_bit(self.PS, self.OF)
+
+        value = self.read(first, second, addr_mode) & 0xFF
+        result = self.A + value + check_bit(self.PS, self.CF)
+
+        self.PS = clear_bit(self.PS, self.CF)
+
+        if ((~(self.A ^ value) & (self.A ^ result) & 0x80) > 0):
+            self.PS = set_bit(self.PS, self.OF)
+
+        if (0 == (result & 0xFF)):
+            self.PS = set_bit(self.PS, self.ZF)
+        if (check_bit(result, 7)):
+            self.PS = set_bit(self.PS, self.NF)
+
+        if (result > 255):
+            self.PS = set_bit(self.PS, self.CF)
+
+        self.A = result & 0xFF
 
     def AND(self, first, second, addr_mode):
         pass
