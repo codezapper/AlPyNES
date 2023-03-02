@@ -111,7 +111,7 @@ class CPU:
 
     def push_PC(self):
         high = self.PC >> 8
-        low = (self.PC << 8) >> 8
+        low = (self.PC & 0xFF)
 
         self.stack_push(high)
         self.stack_push(low)
@@ -120,9 +120,9 @@ class CPU:
         low = self.stack_pop()
         high = self.stack_pop()
 
-        PC = high
-        PC <<= 8
-        PC |= low
+        self.PC = high
+        self.PC <<= 8
+        self.PC |= low
 
     def resolve_address(self, first, second, addr_mode):
         high = 0
@@ -973,12 +973,11 @@ class CPU:
         self.PC = (self.RAM[0xFFFB] << 8) | self.RAM[0xFFFA]
 
     def IRQ(self):
-        pass
-        # if ((check_bit(self.PS, self.ID) == 0) and (interrupt_occurred == IRQ_INT)):
-        #     self.push_PC()
-        #     self.stack_push(self.PS)
+        if (check_bit(self.PS, self.ID) == 0):
+            self.push_PC()
+            self.stack_push(self.PS)
 
-        #     self.PS = set_bit(self.PS, self.B5)
-        #     self.PS = set_bit(self.PS, self.ID)
+            self.PS = set_bit(self.PS, self.B5)
+            self.PS = set_bit(self.PS, self.ID)
 
-        #     self.PC = (self.RAM[0xFFFF] << 8) | self.RAM[0xFFFE]
+            self.PC = (self.RAM[0xFFFF] << 8) | self.RAM[0xFFFE]
