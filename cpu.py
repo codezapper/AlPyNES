@@ -819,70 +819,166 @@ class CPU:
 
 
     def ALR(self, first, second, addr_mode):
-        pass
+        self.AND(first, second, addr_mode)
+        self.LSR(first, second, ACCUMULATOR)
 
     def ANC(self, first, second, addr_mode):
-        pass
+        self.AND(first, second, addr_mode)
+        if (check_bit(self.PS, self.NF)):
+            set_bit(self.PC, self.CF)
+        else:
+            clear_bit(self.PC, self.CF)
 
     def ARR(self, first, second, addr_mode):
-        pass
+        self.AND(first, second, addr_mode)
+        value = self.read(first, second, addr_mode)
+        prev_value = value
 
-    def ASL(self, first, second, addr_mode):
-        pass
+        value >>= 1
+
+        if (check_bit(self.PS, self.CF) == 1):
+            value = set_bit(value, 7)
+        else:
+            value = clear_bit(value, 7)
+
+        if (check_bit(prev_value, 6) == 1):
+            self.PS = set_bit(self.PS, self.CF)
+        else:
+            self.PS = clear_bit(self.PS, self.CF)
+
+        if (check_bit(prev_value, 6) ^ check_bit(prev_value, 5)):
+            self.PS = set_bit(self.PS, self.OF)
+        else:
+            self.PS = clear_bit(self.PS, self.OF)
+
+        if (check_bit(value, 7) == 1):
+            self.PS = set_bit(self.PS, self.NF)
+        else:
+            self.PS = clear_bit(self.PS, self.NF)
+
+        if (0 == value):
+            self.PS = set_bit(self.PS, self.ZF)
+        else:
+            self.PS = clear_bit(self.PS, self.ZF)
+
+        self.write(first, second, addr_mode, value)
 
     def AXA(self, first, second, addr_mode):
-        pass
+        value = self.A & self.X
+
+        self.write(first, second, addr_mode, value)
 
     def AXS(self, first, second, addr_mode):
-        pass
+        self.PS = clear_bit(self.PS, self.ZF)
+        self.PS = clear_bit(self.PS, self.NF)
+
+        result = self.A & self.X
+
+        self.X = result - (self.read(first, second, addr_mode) & 0xFF)
+
+        if (0 == result):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(result, 7)):
+            self.PS = set_bit(self.PS, self.NF)
 
     def DCP(self, first, second, addr_mode):
-        pass
+        self.DEC(first, second, addr_mode)
+        self.CMP(first, second, addr_mode)
 
     def ISC(self, first, second, addr_mode):
-        pass
+        self.INC(first, second, addr_mode)
+        self.SBC(first, second, addr_mode)
 
     def KIL(self, first, second, addr_mode):
-        pass
+        print("***KILL SIGNAL RECEIVED***\n")
+        exit(0)
 
     def LAS(self, first, second, addr_mode):
-        pass
+        self.PS = clear_bit(self.PS, self.NF)
+        self.PS = clear_bit(self.PS, self.ZF)
+
+        value = self.SP & self.read(first, second, addr_mode)
+
+        self.A = value
+        self.X = value
+        self.SP = value
+
+        if (0 == value):
+            self.PS = set_bit(self.PS, self.ZF)
+
+        if (check_bit(value, 7)):
+            self.PS = set_bit(self.PS, self.NF)
 
     def LAX(self, first, second, addr_mode):
-        pass
+        self.LDA(first, second, addr_mode)
+        self.TAX(first, second, addr_mode)
 
     def OAL(self, first, second, addr_mode):
         pass
 
     def RLA(self, first, second, addr_mode):
-        pass
+        self.ROL(first, second, addr_mode)
+        self.AND(first, second, addr_mode)
 
     def RRA(self, first, second, addr_mode):
-        pass
+        self.ROR(first, second, addr_mode)
+        self.ADC(first, second, addr_mode)
 
     def SAX(self, first, second, addr_mode):
-        pass
+        self.write(first, second, addr_mode, self.A & self.X)
 
     def SLO(self, first, second, addr_mode):
-        pass
+        self.ASL(first, second, addr_mode)
+        self.ORA(first, second, addr_mode)
 
     def SRE(self, first, second, addr_mode):
-        pass
+        self.LSR(first, second, addr_mode)
+        self.EOR(first, second, addr_mode)
 
     def SHX(self, first, second, addr_mode):
-        pass
+        address = self.resolve_address(first, second, addr_mode)
+        value = ((address >> 8) & 0xFF) + 1
+
+        result = value & self.X
+
+        self.write(first, second, addr_mode, result)
 
     def SHY(self, first, second, addr_mode):
-        pass
+        address = self.resolve_address(first, second, addr_mode)
+        value = ((address >> 8) & 0xFF) + 1
+
+        result = value & self.Y
+
+        self.write(first, second, addr_mode, result)
 
     def TAS(self, first, second, addr_mode):
-        pass
+        address = self.resolve_address(first, second, addr_mode)
+        value = ((address >> 8) & 0xFF) + 1
+
+        result = self.A & self.X
+        self.SP = result & value
 
     def XAA(self, first, second, addr_mode):
-        pass
+        self.TXA(first, second, addr_mode)
+        self.AND(first, second, addr_mode)
 
     def NMI(self):
-        pass
+        self.push_PC()
+        self.stack_push(self.PS)
+
+        self.PS = set_bit(self.PS, self.B5)
+        self.PS = clear_bit(self.PS, self.B4)
+
+        self.PC = (self.RAM[0xFFFB] << 8) | self.RAM[0xFFFA]
 
     def IRQ(self):
         pass
+        # if ((check_bit(self.PS, self.ID) == 0) and (interrupt_occurred == IRQ_INT)):
+        #     self.push_PC()
+        #     self.stack_push(self.PS)
+
+        #     self.PS = set_bit(self.PS, self.B5)
+        #     self.PS = set_bit(self.PS, self.ID)
+
+        #     self.PC = (self.RAM[0xFFFF] << 8) | self.RAM[0xFFFE]
