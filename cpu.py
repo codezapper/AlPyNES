@@ -12,10 +12,10 @@ RELATIVE = 6
 ABSOLUTE = 7
 ABSOLUTEX = 8
 ABSOLUTEY = 9
-INDEXED = 0
-INDIRECT = 1
-INDIRECTX = 2
-INDIRECTY = 3
+INDEXED = 10
+INDIRECT = 11
+INDIRECTX = 12
+INDIRECTY = 13
 
 INVALID_IMMEDIATE = -32768
 
@@ -158,7 +158,7 @@ class CPU:
         if addr_mode == INDIRECTY:
             high = self.RAM[(first + 1) & 0xFF] << 8
             low = self.RAM[first & 0xFF]
-            return (high | low) + Y
+            return (high | low) + self.Y
         if addr_mode == INDIRECT:
             if (first == 0xFF):
                 high = (second << 8)
@@ -201,7 +201,7 @@ class CPU:
 
     def write(self, first, second, addr_mode, value):
         if (ACCUMULATOR == addr_mode):
-            self.A = value
+            self.A = value & 0xFF
         else:
             address = self.resolve_address(first, second, addr_mode)
             if (((address >= 0x2000) and (address <= 0x3FFF)) or (address == 0x4014)):
@@ -285,7 +285,9 @@ class CPU:
         if (check_bit(value, 7) == 1):
             self.PS = set_bit(self.PS, self.CF)
 
-        value <<= 1        
+        value <<= 1
+        value &= 0xFF
+
         if (0 == value):
             self.PS = set_bit(self.PS, self.ZF)
 
@@ -307,10 +309,8 @@ class CPU:
             self.PC += self.resolve_address(first, second, addr_mode)
 
     def BIT(self, first, second, addr_mode):
-        # if self.PC == 0xc782:
-        #     import pdb pdb.set_trace()
         value = self.read(first, second, addr_mode)
-        result = self.A & value
+        result = (self.A & value) & 0xFF
 
         self.PS = clear_bit(self.PS, self.ZF)
         self.PS = clear_bit(self.PS, self.NF)
@@ -428,6 +428,7 @@ class CPU:
 
     def DEX(self, first, second, addr_mode):
         self.X -= 1
+        self.X &= 0xFF
 
         self.PS = clear_bit(self.PS, self.ZF)
         self.PS = clear_bit(self.PS, self.NF)
@@ -439,6 +440,7 @@ class CPU:
 
     def DEY(self, first, second, addr_mode):
         self.Y -= 1
+        self.Y &= 0xFF
 
         self.PS = clear_bit(self.PS, self.ZF)
         self.PS = clear_bit(self.PS, self.NF)
@@ -450,6 +452,7 @@ class CPU:
 
     def EOR(self, first, second, addr_mode):
         self.A ^= self.read(first, second, addr_mode)
+        self.A &= 0xFF
 
         self.PS = clear_bit(self.PS, self.ZF)
         self.PS = clear_bit(self.PS, self.NF)
@@ -461,6 +464,7 @@ class CPU:
 
     def INC(self, first, second, addr_mode):
         value = self.read(first, second, addr_mode) + 1
+        value &= 0xFF
 
         self.write(first, second, addr_mode, value)
 
@@ -474,6 +478,7 @@ class CPU:
 
     def INX(self, first, second, addr_mode):
         self.X += 1
+        self.X &= 0xFF
 
         self.PS = clear_bit(self.PS, self.ZF)
         self.PS = clear_bit(self.PS, self.NF)
@@ -485,6 +490,7 @@ class CPU:
 
     def INY(self, first, second, addr_mode):
         self.Y += 1
+        self.Y &= 0xFF
 
         self.PS = clear_bit(self.PS, self.ZF)
         self.PS = clear_bit(self.PS, self.NF)
@@ -507,6 +513,7 @@ class CPU:
         self.PS = clear_bit(self.PS, self.NF)
 
         self.A = self.read(first, second, addr_mode)
+
         if (self.A == 0x7C):
             # Only for debugging
             pass
@@ -564,6 +571,7 @@ class CPU:
 
     def ORA(self, first, second, addr_mode):
         self.A |= self.read(first, second, addr_mode)
+        self.A &= 0xFF
 
         self.PS = clear_bit(self.PS, self.ZF)
         self.PS = clear_bit(self.PS, self.NF)
@@ -587,6 +595,7 @@ class CPU:
         self.PS = clear_bit(self.PS, self.NF)
 
         self.A = self.stack_pop()
+        self.A &= 0xFF
 
         if (0 == self.A):
             self.PS = set_bit(self.PS, self.ZF)
@@ -628,6 +637,7 @@ class CPU:
         prev_value = value
 
         value <<= 1
+        value &= 0xFF
 
         if (check_bit(self.PS, self.CF) == 1):
             value = set_bit(value, 0)
@@ -735,6 +745,7 @@ class CPU:
             self.PS = set_bit(self.PS, self.CF)
 
         self.A = result & 0xFF
+        self.A &= 0xFF
 
     def SEC(self, first, second, addr_mode):
         self.PS = set_bit(self.PS, self.CF)
@@ -872,7 +883,7 @@ class CPU:
         self.PS = clear_bit(self.PS, self.ZF)
         self.PS = clear_bit(self.PS, self.NF)
 
-        result = self.A & self.X
+        result = (self.A & self.X) & 0xFF
 
         self.X = result - (self.read(first, second, addr_mode) & 0xFF)
 
@@ -898,7 +909,7 @@ class CPU:
         self.PS = clear_bit(self.PS, self.NF)
         self.PS = clear_bit(self.PS, self.ZF)
 
-        value = self.SP & self.read(first, second, addr_mode)
+        value = (self.SP & self.read(first, second, addr_mode)) & 0xFF
 
         self.A = value
         self.X = value
@@ -956,7 +967,7 @@ class CPU:
         address = self.resolve_address(first, second, addr_mode)
         value = ((address >> 8) & 0xFF) + 1
 
-        result = self.A & self.X
+        result = (self.A & self.X) & 0xFF
         self.SP = result & value
 
     def XAA(self, first, second, addr_mode):
