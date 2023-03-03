@@ -134,6 +134,8 @@ class CPU:
         if addr_mode == IMMEDIATE:
             return first
         if addr_mode == RELATIVE:
+            if first > 127:
+                return first - 256
             return first
         if addr_mode == ZEROPAGE:
             return first % 256
@@ -144,21 +146,21 @@ class CPU:
         if addr_mode == ABSOLUTE:
             address = first
             address = (second << 8) |address
-            return address
+            return address & 0xFFFF
         if addr_mode == ABSOLUTEX:
             address = first
             address = (second << 8) |address
-            return address + self.X
+            return (address + self.X) & 0xFFFF
         if addr_mode == ABSOLUTEY:
             address = first
             address = (second << 8) |address
-            return address + self.Y
+            return (address + self.Y) & 0xFFFF
         if addr_mode == INDIRECTX:
             return (self.RAM[(first + self.X + 1) & 0xFF] << 8) | self.RAM[(first + self.X) & 0xFF]
         if addr_mode == INDIRECTY:
             high = self.RAM[(first + 1) & 0xFF] << 8
             low = self.RAM[first & 0xFF]
-            return (high | low) + self.Y
+            return ((high | low) + self.Y) & 0xFFFF
         if addr_mode == INDIRECT:
             if (first == 0xFF):
                 high = (second << 8)
@@ -170,7 +172,7 @@ class CPU:
                 low = first
                 address = (self.RAM[(high | low) + 1] << 8) | self.RAM[(high | low)]
 
-            return address
+            return address & 0xFFFF
 
 
     def is_jump(self, opcode):
@@ -512,7 +514,9 @@ class CPU:
         self.PS = clear_bit(self.PS, self.ZF)
         self.PS = clear_bit(self.PS, self.NF)
 
+
         self.A = self.read(first, second, addr_mode)
+        self.A &= 0xFF
 
         if (self.A == 0x7C):
             # Only for debugging
