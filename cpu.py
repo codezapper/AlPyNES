@@ -76,8 +76,8 @@ class CPU:
         self.A = 0
         self.X = 0
         self.Y = 0
-        self.PC = 0xC000
-        # self.PC = (self.RAM[0xFFFD] << 8) | self.RAM[0xFFFC]
+        # self.PC = 0xC000
+        self.PC = (self.RAM[0xFFFD] << 8) | self.RAM[0xFFFC]
         # import pdb pdb.set_trace()
         self.PS = 0x24
 
@@ -513,7 +513,6 @@ class CPU:
     def LDA(self, first, second, addr_mode):
         self.PS = clear_bit(self.PS, self.ZF)
         self.PS = clear_bit(self.PS, self.NF)
-
 
         self.A = self.read(first, second, addr_mode)
         self.A &= 0xFF
