@@ -70,14 +70,14 @@ class CPU:
     OF = 6
     NF = 7
 
-    def __init__(self, RAM):
-        self.RAM = RAM
+    def __init__(self, ram):
+        self.ram = ram
         self.SP = 0xFD
         self.A = 0
         self.X = 0
         self.Y = 0
-        # self.PC = 0xC000
-        self.PC = (self.RAM[0xFFFD] << 8) | self.RAM[0xFFFC]
+        self.PC = 0xC000
+        # self.PC = (self.ram.read(0xFFFD) << 8) | self.ram.read(0xFFFC)
         # import pdb pdb.set_trace()
         self.PS = 0x24
 
@@ -101,12 +101,12 @@ class CPU:
         print(logline)
 
     def stack_push(self, value):
-        self.RAM[self.SP + 0x100] = value
+        self.ram.write(self.SP + 0x100, value)
         self.SP -= 1
 
     def stack_pop(self):
         self.SP += 1
-        value = self.RAM[self.SP + 0x100]
+        value = self.ram.read(self.SP + 0x100)
         return value
 
     def push_PC(self):
@@ -156,21 +156,21 @@ class CPU:
             address = (second << 8) |address
             return (address + self.Y) & 0xFFFF
         if addr_mode == INDIRECTX:
-            return (self.RAM[(first + self.X + 1) & 0xFF] << 8) | self.RAM[(first + self.X) & 0xFF]
+            return (self.ram.read((first + self.X + 1) & 0xFF) << 8) | self.ram.read((first + self.X) & 0xFF)
         if addr_mode == INDIRECTY:
-            high = self.RAM[(first + 1) & 0xFF] << 8
-            low = self.RAM[first & 0xFF]
+            high = self.ram.read((first + 1) & 0xFF) << 8
+            low = self.ram.read(first & 0xFF)
             return ((high | low) + self.Y) & 0xFFFF
         if addr_mode == INDIRECT:
             if (first == 0xFF):
                 high = (second << 8)
                 low = (second << 8) | 0x00FF
-                address = (self.RAM[high] << 8) | self.RAM[low]
+                address = (self.ram.read(high) << 8) | self.ram.read(low)
             else:
                 high = second
                 high <<= 8
                 low = first
-                address = (self.RAM[(high | low) + 1] << 8) | self.RAM[(high | low)]
+                address = (self.ram.read((high | low) + 1) << 8) | self.ram.read((high | low))
 
             return address & 0xFFFF
 
@@ -181,15 +181,15 @@ class CPU:
         return False
 
     def clock(self):
-        opcode_id = self.RAM[self.PC]
+        opcode_id = self.ram.read(self.PC)
         opcode = OP(*OP_MAPPING[opcode_id])
     
         if (opcode.cycles == 0):
             self.PC += 1
             return 0
 
-        first = (self.RAM[self.PC + 1])
-        second = (self.RAM[self.PC + 2])
+        first = (self.ram.read(self.PC + 1))
+        second = (self.ram.read(self.PC + 2))
 
         self.log_clock(opcode_id, first, second)
 
@@ -213,23 +213,22 @@ class CPU:
                 pass
                 #poll_controller1 = value
             else:
-                self.RAM[address] = value
-
+                self.ram.write(address, value)
 
     def read(self, first, second, addr_mode):
-        value = self.resolve_address(first, second, addr_mode)
+        address = self.resolve_address(first, second, addr_mode)
 
         if addr_mode in [ACCUMULATOR, IMMEDIATE, RELATIVE]:
-            return value
+            return address
     
         if addr_mode in [ ZEROPAGE, ZEROPAGEX, ZEROPAGEY, ABSOLUTE, ABSOLUTEX, ABSOLUTEY, INDIRECTX, INDIRECTY, INDIRECT ]:
-            if ((value >= 0) and (value <= 0x1FFF)):
-                value &= 0x07FF
+            if ((address >= 0) and (address <= 0x1FFF)):
+                address &= 0x07FF
 
-            if ((value >= 0x2000) and (value <= 0x3FFF)):
+            if ((address >= 0x2000) and (address <= 0x3FFF)):
                 pass
-                # return ppu_read(value)
-            elif (value == 0x4016):
+                # return ppu_read(address)
+            elif (address == 0x4016):
                 pass
                 # TODO : handle controller
                 # if (poll_controller1 >= 0) {
@@ -240,8 +239,7 @@ class CPU:
                 # }
                 # return 0x40
             else:
-                # TODO: Do not read RAM directly, but use a separate function to support mappers
-                return self.RAM[value]
+                return self.ram.read(address)
 
     def ADC(self, first, second, addr_mode):
         self.PS = clear_bit(self.PS, self.ZF)
@@ -345,7 +343,7 @@ class CPU:
         self.PC -= 2
         self.PHP(first, second, addr_mode)
         self.SEI(first, second, addr_mode)
-        self.PC = (self.RAM[0xFFFF] << 8) | self.RAM[0xFFFE]
+        self.PC = (self.ram.read(0xFFFF) << 8) | self.ram.read(0xFFFE)
 
     def BVC(self, first, second, addr_mode):
         if (check_bit(self.PS, self.OF) == 0):
@@ -984,7 +982,7 @@ class CPU:
         self.PS = set_bit(self.PS, self.B5)
         self.PS = clear_bit(self.PS, self.B4)
 
-        self.PC = (self.RAM[0xFFFB] << 8) | self.RAM[0xFFFA]
+        self.PC = (self.ram.read(0xFFFB) << 8) | self.ram.read(0xFFFA)
 
     def IRQ(self):
         if (check_bit(self.PS, self.ID) == 0):
@@ -994,4 +992,4 @@ class CPU:
             self.PS = set_bit(self.PS, self.B5)
             self.PS = set_bit(self.PS, self.ID)
 
-            self.PC = (self.RAM[0xFFFF] << 8) | self.RAM[0xFFFE]
+            self.PC = (self.ram.read(0xFFFF) << 8) | self.ram.read(0xFFFE)
