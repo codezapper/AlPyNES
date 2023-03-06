@@ -1,5 +1,7 @@
 import pygame
 from pygame import Color
+from utils import check_bit, set_bit, clear_bit
+
 
 WIDTH = 256
 HEIGHT = 240
@@ -24,6 +26,9 @@ FLIP_VERTICAL = 7
 
 IS_SPRITE = 1
 IS_BACKGROUND = 0
+
+NMI_INT = 0
+IRQ_INT = 1
 
 # VRAM:
 # $0000-$0FFF	$1000	Pattern table 0
@@ -90,6 +95,7 @@ class PPU:
         # if self.current_scanline == -1:
         self.screen.set_at((50, 50), Color(255, 255, 255))
         pygame.display.flip()
+        self.ppustatus = set_bit(self.ppustatus, VBLANK_BIT)
 
     @property
     def ppuctrl(self):

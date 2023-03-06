@@ -19,6 +19,8 @@ INDIRECTY = 13
 
 INVALID_IMMEDIATE = -32768
 
+NMI_INT = 0
+IRQ_INT = 1
 
 OP_MAPPING = [
     ["BRK", IMPLICIT, 1, 7], ["ORA", INDIRECTX, 2, 6], ["KIL", IMPLICIT, 1, 1], ["SLO", INDIRECTX, 2, 8], ["NOP", ABSOLUTEX, 2, 1], ["ORA", ZEROPAGE, 2, 5], ["ASL", ZEROPAGE, 2, 5], ["SLO", ZEROPAGE, 2, 5], ["PHP", IMPLICIT, 1, 3], ["ORA", IMMEDIATE, 2, 2],
@@ -76,8 +78,8 @@ class CPU:
         self.A = 0
         self.X = 0
         self.Y = 0
-        self.PC = 0xC000
-        # self.PC = (self.ram.read(0xFFFD) << 8) | self.ram.read(0xFFFC)
+        # self.PC = 0xC000
+        self.PC = (self.ram.read(0xFFFD) << 8) | self.ram.read(0xFFFC)
         # import pdb pdb.set_trace()
         self.PS = 0x24
 
@@ -180,6 +182,18 @@ class CPU:
             return True
         return False
 
+    def must_handle_interrupt(self, value):
+        if self.interrupt_handled:
+            return False
+
+        if value in {NMI_INT, IRQ_INT}:
+            if self.interrupt_count >= 6:
+                self.interrupt_count = 0
+                return True
+            cpu_interrupt_count += 1
+
+        return False
+
     def clock(self):
         opcode_id = self.ram.read(self.PC)
         opcode = OP(*OP_MAPPING[opcode_id])
@@ -199,7 +213,6 @@ class CPU:
             self.PC += opcode.byte_size
 
         return opcode.cycles
-
 
     def write(self, first, second, addr_mode, value):
         if (ACCUMULATOR == addr_mode):
@@ -225,10 +238,7 @@ class CPU:
             if ((address >= 0) and (address <= 0x1FFF)):
                 address &= 0x07FF
 
-            if ((address >= 0x2000) and (address <= 0x3FFF)):
-                pass
-                # return ppu_read(address)
-            elif (address == 0x4016):
+            if (address == 0x4016):
                 pass
                 # TODO : handle controller
                 # if (poll_controller1 >= 0) {

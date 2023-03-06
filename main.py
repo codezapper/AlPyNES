@@ -26,6 +26,7 @@ ppu = PPU(sram, svram, screen)
 
 while cpu.PC > 0:
     cpu.clock()
-    # for event in pygame.event.get():
-    #     if event.type == pygame.QUIT:
-    #         sys.exit(0)
+    ppu.clock(1)
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            sys.exit(0)
