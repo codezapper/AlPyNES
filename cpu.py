@@ -82,6 +82,8 @@ class CPU:
         self.PC = (self.ram.read(0xFFFD) << 8) | self.ram.read(0xFFFC)
         # import pdb pdb.set_trace()
         self.PS = 0x24
+        self.interrupt_count = 0
+        self.interrupt_handled = False
 
     def log_clock(self, opcode_id, first, second):
         opcode = OP(*OP_MAPPING[opcode_id])
@@ -182,19 +184,25 @@ class CPU:
             return True
         return False
 
-    def must_handle_interrupt(self, value):
+    def handle_interrupt(self):
         if self.interrupt_handled:
-            return False
+            self.ram.interrupt = -1
+            self.interrupt_handled = False
+        else:
+            if self.ram.interrupt in {NMI_INT, IRQ_INT}:
+                if self.interrupt_count >= 6:
+                    self.interrupt_count = 0
+                    return True
+                self.interrupt_count += 1
 
-        if value in {NMI_INT, IRQ_INT}:
-            if self.interrupt_count >= 6:
-                self.interrupt_count = 0
-                return True
-            cpu_interrupt_count += 1
-
-        return False
+                if self.ram.interrupt == NMI_INT:
+                    self.NMI()
+                else:
+                    self.IRQ()
+                self.interrupt_handled = True
 
     def clock(self):
+        self.handle_interrupt()
         opcode_id = self.ram.read(self.PC)
         opcode = OP(*OP_MAPPING[opcode_id])
     
