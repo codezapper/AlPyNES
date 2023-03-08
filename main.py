@@ -22,6 +22,7 @@ pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
 cpu = CPU(sram)
+
 ppu = PPU(sram, svram, screen)
 
 while cpu.PC > 0:

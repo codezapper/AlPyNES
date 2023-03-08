@@ -4,6 +4,7 @@ from pygame.surfarray import pixels2d
 from utils import check_bit, set_bit, clear_bit
 
 
+
 WIDTH = 256
 HEIGHT = 240
 
@@ -76,7 +77,7 @@ class PPU:
 
         self.ppuctrl = 0x80
         self.ppumask = 0
-        self.ppustatus = 0x0
+        self._ppustatus = 0x0
         self.oamaddr = 0
         self.oamdata = [0] * OAMSIZE
         self.ppudata = 0
@@ -95,9 +96,9 @@ class PPU:
         self.vram.update_palette()
 
     def clock(self, cpu_cycles):
-        pass
-
-        # if self.current_scanline == -1:
+        if self.current_scanline == -1:
+            self.ppustatus =  set_bit(self._ppustatus, VBLANK_BIT)
+        self.current_scanline += 1
         # self.screen.set_at((50, 50), Color(255, 255, 255))
         # pygame.display.flip()
         # self.ppustatus = set_bit(self.ppustatus, VBLANK_BIT)
@@ -136,11 +137,17 @@ class PPU:
 
     @property
     def ppustatus(self):
-        return self.ram.read(0x2002)
+        self._ppustatus = self.ram.read(0x2002)
+        self._ppustatus = clear_bit(self.ppustatus, VBLANK_BIT)
+        # TODO: reset the address latch used by PPUSCROLL and PPUADDR
+        return self._ppustatus
 
     @ppustatus.setter
     def ppustatus(self, value):
+        self._ppustatus = value
         self.ram.write(0x2002, value)
+        if (check_bit(self._ppustatus, VBLANK_BIT)) and (value & VBLANK_BIT):
+            self.ram.interrupt = NMI_INT
 
     @property
     def oamaddr(self):

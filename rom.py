@@ -61,5 +61,4 @@ class ROM:
         end_prg = start_prg + (16384 * self.header["prg_size"])
 
         self.prg_rom = self.input_array[start_prg: end_prg]
-        self.chr_rom = self.input_array[end_prg: (self.header["chr_size"] * 8192)]
-
+        self.chr_rom = self.input_array[end_prg: end_prg + (self.header["chr_size"] * 8192)]
