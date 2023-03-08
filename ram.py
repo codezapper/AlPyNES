@@ -3,7 +3,7 @@ class RAM:
         self.data = [0] * 0xFFFF
         self.data[0x8000: (0x8000 + len(prg_rom))] = prg_rom
         self.data[0xC000: (0xC000 + len(prg_rom))] = prg_rom
-        self._interrupt = 0
+        self._interrupt = -1
 
     def write(self, address, value):
         self.data[address] = value
