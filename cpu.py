@@ -78,8 +78,8 @@ class CPU:
         self.A = 0
         self.X = 0
         self.Y = 0
-        # self.PC = 0xC000
-        self.PC = (self.ram.read(0xFFFD) << 8) | self.ram.read(0xFFFC)
+        self.PC = 0xC000
+        # self.PC = (self.ram.read(0xFFFD) << 8) | self.ram.read(0xFFFC)
         # import pdb pdb.set_trace()
         self.PS = 0x24
         self.interrupt_count = 0

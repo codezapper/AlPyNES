@@ -92,15 +92,18 @@ class PPU:
         self.current_frame = 0
         self.screen = screen
         self.c = 0
+        self.vram.update_palette()
 
     def clock(self, cpu_cycles):
+        pass
+
         # if self.current_scanline == -1:
         # self.screen.set_at((50, 50), Color(255, 255, 255))
         # pygame.display.flip()
-        self.ppustatus = set_bit(self.ppustatus, VBLANK_BIT)
-        self.ram.interrupt = NMI_INT
+        # self.ppustatus = set_bit(self.ppustatus, VBLANK_BIT)
+        # self.ram.interrupt = NMI_INT
 
-        pxarray = pygame.surfarray.pixels2d(self.screen)
+        # pxarray = pygame.surfarray.pixels2d(self.screen)
         # for i in range(len(framebuffer)):
         #     framebuffer[i] = [128] * 240
 
@@ -108,11 +111,11 @@ class PPU:
         #     for col in range(128):
         #         # adr = (r / 8 * 0x100) + (r % 8) + (col / 8) * 0x10
         #         # pixel = ((self.vram.read(adr) >> (7-(col % 8))) & 1) + ((self.vram.read(adr + 8) >> (7-(col % 8))) & 1) * 2
-        #         framebuffer[(row * 128 * 3) + (col * 3) + 1] = 128
-        #         framebuffer[(row * 128 * 3) + (col * 3) + 1] = 128
-        #         framebuffer[(row * 128 * 3) + (col * 3) + 2] = 128
-        pxarray[100, 100] = Color(0, 255, 0)
-        pygame.display.flip()
+        #         pxarray[row][col] = Color(128, 128, 128)
+                # pxarray[(row * 128 * 3) + (col * 3) + 1] = 128
+                # pxarray[(row * 128 * 3) + (col * 3) + 2] = 128
+        # pxarray[100, 100] = Color(0, 255, 0)
+        # pygame.display.flip()
 
 
     @property
