@@ -66,6 +66,8 @@ IRQ_INT = 1
 # PPUDATA	$2007	dddd dddd	PPU data read/write
 # OAMDMA	$4014	aaaa aaaa	OAM DMA high address
 
+import sys
+
 class PPU:
     def __init__(self, ram, vram, screen):
         self.ram = ram
@@ -94,11 +96,99 @@ class PPU:
         self.screen = screen
         self.c = 0
         self.vram.update_palette()
+        self.patterns = []
+        self.load_patterns()
+
+    def load_patterns(self):
+        tiles = []
+        tile = []
+        for i in range(0x0000, 0x0FFF, 16):
+            plane0 = []
+            plane1 = []
+            start = i
+            end = i + 8
+            for j in range(start, end):
+                plane0.append(self.vram.read(j))
+            
+            start = i + 8
+            end = i + 16
+            for j in range(start, end):
+                plane1.append(self.vram.read(j))
+
+            for k in range(8):
+                combined = []
+                for b in range(8):
+                    if check_bit(plane0[k], b) and check_bit(plane1[k], b):
+                        combined.append(3)
+                    elif check_bit(plane1[k], b):
+                        combined.append(2)
+                    elif check_bit(plane0[k], b):
+                        combined.append(1)
+                    else:
+                        combined.append(0)
+                tile.append(combined[::-1])
+            tiles.append(tile)
+
+        # 0x0000 -> 0x0FFF
+        self.patterns.append(tiles)
+
+        tiles = []
+        tile = []
+        for i in range(0x1000, 0x1FFF, 16):
+            plane0 = []
+            plane1 = []
+            start = i
+            end = i + 8
+            for j in range(start, end):
+                plane0.append(self.vram.read(j))
+            
+            start = i + 8
+            end = i + 16
+            for j in range(start, end):
+                plane1.append(self.vram.read(j))
+
+            for k in range(8):
+                combined = []
+                for b in range(8):
+                    if check_bit(plane0[k], b) and check_bit(plane1[k], b):
+                        combined.append(3)
+                    elif check_bit(plane1[k], b):
+                        combined.append(2)
+                    elif check_bit(plane0[k], b):
+                        combined.append(1)
+                    else:
+                        combined.append(0)
+                tile.append(combined[::-1])
+            tiles.append(tile)
+
+        # 0x1000 -> 0x1FFF
+        self.patterns.append(tiles)
+
 
     def clock(self, cpu_cycles):
-        if self.current_scanline == -1:
-            self.ppustatus =  set_bit(self._ppustatus, VBLANK_BIT)
-        self.current_scanline += 1
+        # if self.current_scanline == -1:
+        #     self.ppustatus =  set_bit(self._ppustatus, VBLANK_BIT)
+        # self.current_scanline += 1
+
+
+        start_x = 0
+        start_y = 0
+
+        for tiles in self.patterns:
+            for tile in tiles:
+                for y, row in enumerate(tile):
+                    for x, col in enumerate(row):
+                        if col != 0:
+                            self.screen.set_at((start_x+x, start_y+y), Color(255, 255, 255))
+                start_x += 8
+                if x >= WIDTH:
+                    start_y += 8
+                    start_x = 0
+        pygame.display.flip()
+        import time
+        time.sleep(100)
+        sys.exit()
+
         # self.screen.set_at((50, 50), Color(255, 255, 255))
         # pygame.display.flip()
         # self.ppustatus = set_bit(self.ppustatus, VBLANK_BIT)
