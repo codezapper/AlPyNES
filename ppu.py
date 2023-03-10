@@ -101,8 +101,8 @@ class PPU:
 
     def load_patterns(self):
         tiles = []
-        tile = []
         for i in range(0x0000, 0x0FFF, 16):
+            tile = []
             plane0 = []
             plane1 = []
             start = i
@@ -126,8 +126,8 @@ class PPU:
         self.patterns.append(tiles)
 
         tiles = []
-        tile = []
         for i in range(0x1000, 0x1FFF, 16):
+            tile = []
             plane0 = []
             plane1 = []
             start = i
@@ -150,26 +150,22 @@ class PPU:
         # 0x1000 -> 0x1FFF
         self.patterns.append(tiles)
 
+    def show_tile(self, bank, tile_no, start_x, start_y):
+        for y, row in enumerate(self.patterns[bank][tile_no]):
+            for x, col in enumerate(row):
+                if col != 0:
+                    self.screen.set_at((start_x+x, start_y+y), Color(255, 255, 255))
+        start_x += 8
+        if x >= WIDTH:
+            start_y += 8
+            start_x = 0
 
     def clock(self, cpu_cycles):
         # if self.current_scanline == -1:
         #     self.ppustatus =  set_bit(self._ppustatus, VBLANK_BIT)
         # self.current_scanline += 1
 
-
-        start_x = 0
-        start_y = 0
-
-        for tiles in self.patterns:
-            for tile in tiles:
-                for y, row in enumerate(tile):
-                    for x, col in enumerate(row):
-                        if col != 0:
-                            self.screen.set_at((start_x+x, start_y+y), Color(255, 255, 255))
-                start_x += 8
-                if x >= WIDTH:
-                    start_y += 8
-                    start_x = 0
+        self.show_tile(1, 10, 100, 100)
         pygame.display.flip()
         import time
         time.sleep(100)
