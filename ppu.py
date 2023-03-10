@@ -102,93 +102,41 @@ class PPU:
         self.load_attributes()
 
     def load_patterns(self):
-        tiles = []
-        for i in range(0x0000, 0x0FFF, 16):
-            tile = []
-            plane0 = []
-            plane1 = []
-            start = i
-            end = i + 8
-            for j in range(start, end):
-                plane0.append(self.vram.read(j))
-            
-            start = i + 8
-            end = i + 16
-            for j in range(start, end):
-                plane1.append(self.vram.read(j))
+        for address_range in [[0x0000, 0x0FFF, 16], [0x1000, 0x1FFF, 16]]:
+            tiles = []
+            for i in range(*address_range):
+                tile = []
+                plane0 = []
+                plane1 = []
+                start = i
+                end = i + 8
+                for j in range(start, end):
+                    plane0.append(self.vram.read(j))
+                
+                start = i + 8
+                end = i + 16
+                for j in range(start, end):
+                    plane1.append(self.vram.read(j))
 
-            for k in range(8):
-                combined = []
-                for b in range(8):
-                    combined.append(check_bit(plane0[k], b) | (check_bit(plane1[k], b) << 1))
-                tile.append(combined[::-1])
-            tiles.append(tile)
-
-        # 0x0000 -> 0x0FFF
-        self.patterns.append(tiles)
-
-        tiles = []
-        for i in range(0x1000, 0x1FFF, 16):
-            tile = []
-            plane0 = []
-            plane1 = []
-            start = i
-            end = i + 8
-            for j in range(start, end):
-                plane0.append(self.vram.read(j))
-            
-            start = i + 8
-            end = i + 16
-            for j in range(start, end):
-                plane1.append(self.vram.read(j))
-
-            for k in range(8):
-                combined = []
-                for b in range(8):
-                    combined.append(check_bit(plane0[k], b) | (check_bit(plane1[k], b) << 1))
-                tile.append(combined[::-1])
-            tiles.append(tile)
-
-        # 0x1000 -> 0x1FFF
-        self.patterns.append(tiles)
+                for k in range(8):
+                    combined = []
+                    for b in range(8):
+                        combined.append(check_bit(plane0[k], b) | (check_bit(plane1[k], b) << 1))
+                    tile.append(combined[::-1])
+                tiles.append(tile)
+            self.patterns.append(tiles)
 
     def load_attributes(self):
-        start_at = 0x23C0
         current_index = 0
-        for i in range(64):
-            current_byte = self.vram.read(start_at + i)
-            self.attributes[current_index + 33] = current_byte >> 6
-            self.attributes[current_index + 32] = (current_byte & 0b00110000) >> 4
-            self.attributes[current_index + 1] = (current_byte & 0b00001100) >> 2
-            self.attributes[current_index] = current_byte & 0b00000011
-            current_index += 2
-
-        start_at = 0x27C0
-        for i in range(64):
-            current_byte = self.vram.read(start_at + i)
-            self.attributes[current_index + 33] = current_byte >> 6
-            self.attributes[current_index + 32] = (current_byte & 0b00110000) >> 4
-            self.attributes[current_index + 1] = (current_byte & 0b00001100) >> 2
-            self.attributes[current_index] = current_byte & 0b00000011
-            current_index += 2
-
-        start_at = 0x2BC0
-        for i in range(64):
-            current_byte = self.vram.read(start_at + i)
-            self.attributes[current_index + 33] = current_byte >> 6
-            self.attributes[current_index + 32] = (current_byte & 0b00110000) >> 4
-            self.attributes[current_index + 1] = (current_byte & 0b00001100) >> 2
-            self.attributes[current_index] = current_byte & 0b00000011
-            current_index += 2
-
-        start_at = 0x2FC0
-        for i in range(64):
-            current_byte = self.vram.read(start_at + i)
-            self.attributes[current_index + 33] = current_byte >> 6
-            self.attributes[current_index + 32] = (current_byte & 0b00110000) >> 4
-            self.attributes[current_index + 1] = (current_byte & 0b00001100) >> 2
-            self.attributes[current_index] = current_byte & 0b00000011
-            current_index += 2
+        for index, start_at in enumerate([0x23C0, 0x27C0, 0x2BC0, 0x2FC0]):
+            self.attributes[index] = [0] * 1024
+            for i in range(64):
+                current_byte = self.vram.read(start_at + i)
+                self.attributes[index][current_index + 33] = current_byte >> 6
+                self.attributes[index][current_index + 32] = (current_byte & 0b00110000) >> 4
+                self.attributes[index][current_index + 1] = (current_byte & 0b00001100) >> 2
+                self.attributes[index][current_index] = current_byte & 0b00000011
+                current_index += 2
 
     def show_tile(self, bank, tile_no, start_x, start_y):
         for y, row in enumerate(self.patterns[bank][tile_no]):
