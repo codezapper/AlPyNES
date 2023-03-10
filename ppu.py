@@ -97,7 +97,9 @@ class PPU:
         self.c = 0
         self.vram.update_palette()
         self.patterns = []
+        self.attributes = [0] * 1024
         self.load_patterns()
+        self.load_attributes()
 
     def load_patterns(self):
         tiles = []
@@ -150,11 +152,49 @@ class PPU:
         # 0x1000 -> 0x1FFF
         self.patterns.append(tiles)
 
+    def load_attributes(self):
+        start_at = 0x23C0
+        current_index = 0
+        for i in range(64):
+            current_byte = self.vram.read(start_at + i)
+            self.attributes[current_index + 33] = current_byte >> 6
+            self.attributes[current_index + 32] = (current_byte & 0b00110000) >> 4
+            self.attributes[current_index + 1] = (current_byte & 0b00001100) >> 2
+            self.attributes[current_index] = current_byte & 0b00000011
+            current_index += 2
+
+        start_at = 0x27C0
+        for i in range(64):
+            current_byte = self.vram.read(start_at + i)
+            self.attributes[current_index + 33] = current_byte >> 6
+            self.attributes[current_index + 32] = (current_byte & 0b00110000) >> 4
+            self.attributes[current_index + 1] = (current_byte & 0b00001100) >> 2
+            self.attributes[current_index] = current_byte & 0b00000011
+            current_index += 2
+
+        start_at = 0x2BC0
+        for i in range(64):
+            current_byte = self.vram.read(start_at + i)
+            self.attributes[current_index + 33] = current_byte >> 6
+            self.attributes[current_index + 32] = (current_byte & 0b00110000) >> 4
+            self.attributes[current_index + 1] = (current_byte & 0b00001100) >> 2
+            self.attributes[current_index] = current_byte & 0b00000011
+            current_index += 2
+
+        start_at = 0x2FC0
+        for i in range(64):
+            current_byte = self.vram.read(start_at + i)
+            self.attributes[current_index + 33] = current_byte >> 6
+            self.attributes[current_index + 32] = (current_byte & 0b00110000) >> 4
+            self.attributes[current_index + 1] = (current_byte & 0b00001100) >> 2
+            self.attributes[current_index] = current_byte & 0b00000011
+            current_index += 2
+
     def show_tile(self, bank, tile_no, start_x, start_y):
         for y, row in enumerate(self.patterns[bank][tile_no]):
             for x, col in enumerate(row):
                 if col != 0:
-                    self.screen.set_at((start_x+x, start_y+y), Color(255, 255, 255))
+                    self.screen.set_at((start_x+x, start_y+y), Color((255, 255, 255)))
         start_x += 8
         if x >= WIDTH:
             start_y += 8
@@ -165,11 +205,9 @@ class PPU:
         #     self.ppustatus =  set_bit(self._ppustatus, VBLANK_BIT)
         # self.current_scanline += 1
 
+        self.load_attributes()
         self.show_tile(1, 10, 100, 100)
         pygame.display.flip()
-        import time
-        time.sleep(100)
-        sys.exit()
 
         # self.screen.set_at((50, 50), Color(255, 255, 255))
         # pygame.display.flip()
