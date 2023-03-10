@@ -118,14 +118,7 @@ class PPU:
             for k in range(8):
                 combined = []
                 for b in range(8):
-                    if check_bit(plane0[k], b) and check_bit(plane1[k], b):
-                        combined.append(3)
-                    elif check_bit(plane1[k], b):
-                        combined.append(2)
-                    elif check_bit(plane0[k], b):
-                        combined.append(1)
-                    else:
-                        combined.append(0)
+                    combined.append(check_bit(plane0[k], b) | (check_bit(plane1[k], b) << 1))
                 tile.append(combined[::-1])
             tiles.append(tile)
 
@@ -150,14 +143,7 @@ class PPU:
             for k in range(8):
                 combined = []
                 for b in range(8):
-                    if check_bit(plane0[k], b) and check_bit(plane1[k], b):
-                        combined.append(3)
-                    elif check_bit(plane1[k], b):
-                        combined.append(2)
-                    elif check_bit(plane0[k], b):
-                        combined.append(1)
-                    else:
-                        combined.append(0)
+                    combined.append(check_bit(plane0[k], b) | (check_bit(plane1[k], b) << 1))
                 tile.append(combined[::-1])
             tiles.append(tile)
 
