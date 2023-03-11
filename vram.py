@@ -20,13 +20,15 @@ class VRAM:
         self.palette = [_tmp_arr] * 8
 
     def write(self, address, value):
-        if (address > 0x3FFF):
-            import pdb; pdb.set_trace()
+        # Mirror memory
+        while (address > 0x3FFF):
+            address -= 0x3FF
         self.data[address] = value
 
     def read(self, address):
-        if (address > 0x3FFF):
-            import pdb; pdb.set_trace()
+        # Mirror memory
+        while (address > 0x3FFF):
+            address -= 0x3FF
         return self.data[address]
     
     @property
