@@ -15,8 +15,8 @@ except Exception:
     print("Cannot open file")
     exit()
 
-sram = RAM(r.prg_rom)
 svram = VRAM(r.chr_rom)
+sram = RAM(r.prg_rom, svram)
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))

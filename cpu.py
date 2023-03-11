@@ -1,5 +1,6 @@
 from collections import namedtuple
 from utils import check_bit, clear_bit, set_bit
+from interrupts import nmi, irq
 
 
 IMPLICIT = 0
