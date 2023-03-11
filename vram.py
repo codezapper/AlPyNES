@@ -1,3 +1,6 @@
+from utils import check_bit
+
+
 class VRAM:
     def __init__(self, chr_rom):
         self.data = [0] * 0x3FFF
@@ -15,16 +18,26 @@ class VRAM:
         self.palette = [_tmp_arr] * 8
 
     def write(self, address, value):
-        # Mirrored memory
-        if address >= 0x3000 and address <= 0x3EFF:
-            address -= 0x1000
+        if (address > 0x3FFF):
+            import pdb; pdb.set_trace()
         self.data[address] = value
 
     def read(self, address):
-        # Mirrored memory
-        if address >= 0x3000 and address <= 0x3EFF:
-            address -= 0x1000
+        if (address > 0x3FFF):
+            import pdb; pdb.set_trace()
         return self.data[address]
+    
+    @property
+    def ppuaddr(self):
+        address = self._ppuaddr
+        self._ppuaddr += 1 + check_bit(self.read(0x2000), 2) * 31
+
+        return address
+
+    @ppuaddr.setter
+    def ppuadr(self, value):
+        self._ppuaddr <<= 8
+        self._ppuaddr |= value
 
     def update_palette(self):
         self.palette[0][0] = self.data[0x3F00]

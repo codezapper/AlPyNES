@@ -12,16 +12,16 @@ class RAM:
 
     def write(self, address, value):
         if (address == 0x2007):
-            vaddress = self.read(0x2006)
-            self.write(0x2006, 1 + check_bit(self.read(0x2000)) * 31)
+            vaddress = self.vram.ppuaddr
             self.vram.write(vaddress, value)
+        elif (address == 0x2006):
+            self.vram.ppuaddr = value
         else:
             self.data[address] = value
 
     def read(self, address):
         if (address == 0x2007):
-            vaddress = self.read(0x2006)
-            self.write(0x2006, 1 + check_bit(self.read(0x2000)) * 31)
+            vaddress = self.vram.ppuaddr
             return self.vram.read(vaddress)
         return self.data[address]
 

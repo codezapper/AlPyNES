@@ -91,6 +91,7 @@ class PPU:
         self.x_scroll = 0
         self.y_scroll = 0
         self.current_scanline = -1
+        self.current_tile = -1
         self.current_cycle = 0
         self.current_frame = 0
         self.screen = screen
@@ -98,6 +99,11 @@ class PPU:
         self.vram.update_palette()
         self.patterns = []
         self.attributes = [0] * 1024
+        self.nametables = [0, 1, 2, 3]
+        self.nametables[0] = [0] * 1024
+        self.nametables[1] = [0] * 1024
+        self.nametables[2] = [0] * 1024
+        self.nametables[3] = [0] * 1024
         self.load_patterns()
         self.load_attributes()
 
@@ -138,24 +144,16 @@ class PPU:
                 self.attributes[index][current_index] = current_byte & 0b00000011
                 current_index += 2
 
-    def show_tile(self, bank, tile_no, start_x, start_y):
-        for y, row in enumerate(self.patterns[bank][tile_no]):
-            for x, col in enumerate(row):
-                if col != 0:
-                    self.screen.set_at((start_x+x, start_y+y), Color((255, 255, 255)))
-        start_x += 8
-        if x >= WIDTH:
-            start_y += 8
-            start_x = 0
+    def show_tile(self, bank, tile_no, start_x):
+        row = self.patterns[bank][tile_no][self.current_scanline % 8]
+        for x, col in enumerate(row):
+            if col != 0:
+                self.screen.set_at((start_x+x, self.current_scanline), Color((255, 255, 255)))
 
     def clock(self, cpu_cycles):
-        # if self.current_scanline == -1:
-        #     self.ppustatus =  set_bit(self._ppustatus, VBLANK_BIT)
-        # self.current_scanline += 1
-
-        self.load_attributes()
-        self.show_tile(1, 10, 100, 100)
-        pygame.display.flip()
+        if self.current_scanline == -1:
+            self.ppustatus = set_bit(self._ppustatus, VBLANK_BIT)
+        self.current_scanline += 1
 
         # self.screen.set_at((50, 50), Color(255, 255, 255))
         # pygame.display.flip()
@@ -230,22 +228,6 @@ class PPU:
     @ppuscroll.setter
     def ppuscroll(self, value):
         self.ram.write(0x2005, value)
-
-    @property
-    def ppuaddr(self):
-        return self.ram.read(0x2006)
-
-    @ppuaddr.setter
-    def ppuaddr(self, value):
-        self.ram.write(0x2006, value)
-
-    @property
-    def ppudata(self):
-        return self.ram.read(0x2007)
-
-    @ppudata.setter
-    def ppudata(self, value):
-        self.ram.write(0x2007, value)
 
     @property
     def oamdma(self):
