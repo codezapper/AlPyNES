@@ -15,6 +15,7 @@ class RAM:
             vaddress = self.vram.ppuaddr
             self.vram.write(vaddress, value)
         elif (address == 0x2006):
+            import pdb; pdb.set_trace()
             self.vram.ppuaddr = value
         else:
             self.data[address] = value

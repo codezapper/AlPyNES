@@ -227,10 +227,10 @@ class CPU:
             self.A = value & 0xFF
         else:
             address = self.resolve_address(first, second, addr_mode)
-            if (((address >= 0x2000) and (address <= 0x3FFF)) or (address == 0x4014)):
-                pass
+            # if (((address >= 0x2000) and (address <= 0x3FFF)) or (address == 0x4014)):
+            #     pass
                 #ppu_write(address, value)
-            elif (address == 0x4016):
+            if (address == 0x4016):
                 pass
                 #poll_controller1 = value
             else:
