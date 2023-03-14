@@ -10,7 +10,8 @@ WIDTH = 256
 HEIGHT = 240
 
 try:
-    r = ROM(sys.argv[1])
+    # r = ROM(sys.argv[1])
+    r = ROM("dk.nes")
 except Exception:
     print("Cannot open file")
     exit()

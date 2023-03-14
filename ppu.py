@@ -92,6 +92,8 @@ class PPU:
         self.y_scroll = 0
         self.current_scanline = -1
         self.current_tile = -1
+        self.start_x = 0
+        self.current_x = 0
         self.current_cycle = 0
         self.current_frame = 0
         self.screen = screen
@@ -144,16 +146,44 @@ class PPU:
                 self.attributes[index][current_index] = current_byte & 0b00000011
                 current_index += 2
 
-    def show_tile(self, bank, tile_no, start_x):
-        row = self.patterns[bank][tile_no][self.current_scanline % 8]
-        for x, col in enumerate(row):
-            if col != 0:
-                self.screen.set_at((start_x+x, self.current_scanline), Color((255, 255, 255)))
+    def show_tile(self, bank, tile_no):
+        row = self.patterns[0][tile_no][self.current_scanline % 8]
+        col = row[self.current_x]
+        if col != 0:
+            self.screen.set_at((self.start_x + self.current_x, self.current_scanline), Color((255, 255, 255)))
 
+    def fetch_tile_no(self, nametable_id):
+        base_address = 0x2000 + (nametable_id * 0x400)
+        tile_address = base_address + self.current_scanline + self.current_x + self.start_x
+        int(self.start_x / 8) + (self.current_scanline * 8)
+        t = self.vram.read(tile_address)
+        return self.vram.read(tile_address)
+    
     def clock(self, cpu_cycles):
-        if self.current_scanline == -1:
+        bg_bank = 1 if check_bit(self.ppuctrl, BG_TILE_SELECT) else 0
+        nametable_id = (check_bit(self.ppuctrl, 1) << 1) | check_bit(self.ppuctrl, 0)
+        if (self.current_scanline == -1):
+            self.screen.fill((0,0,0))
+            self.current_tile = self.fetch_tile_no(nametable_id)
+            self.current_scanline += 1
+        elif 0 <= self.current_scanline <= 256:
+            self.show_tile(bg_bank, self.current_tile)
+            self.current_x += 1
+            if self.current_x >= 8:
+                self.current_tile = self.fetch_tile_no(nametable_id)
+                self.current_x = 0
+                self.start_x += 8
+                if self.start_x >= WIDTH:
+                    self.start_x = 0
+                    self.current_scanline += 1
+        elif 241 <= self.current_scanline <= 260:
             self.ppustatus = set_bit(self._ppustatus, VBLANK_BIT)
-        self.current_scanline += 1
+            self.current_scanline += 1
+
+        if self.current_scanline > 260:
+            self.current_scanline = -1
+            pygame.display.flip()
+
 
         # self.screen.set_at((50, 50), Color(255, 255, 255))
         # pygame.display.flip()

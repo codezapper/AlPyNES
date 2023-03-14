@@ -15,7 +15,6 @@ class VRAM:
             [0x99, 0xFF, 0xFC], [0xDD, 0xDD, 0xDD], [0x11, 0x11, 0x11], [0x11, 0x11, 0x11]
         ]
         _tmp_arr = [0] * 4
-        self._ppuaddr = 0
         self._latch_toggle = False
         self.palette = [_tmp_arr] * 8
 
@@ -23,6 +22,8 @@ class VRAM:
         # Mirror memory
         while (address > 0x3FFF):
             address -= 0x3FF
+        if value in [0x24, 24]:
+            a = 0
         self.data[address] = value
 
     def read(self, address):
@@ -31,22 +32,6 @@ class VRAM:
             address -= 0x3FF
         return self.data[address]
     
-    @property
-    def ppuaddr(self):
-        address = self._ppuaddr
-        self._ppuaddr += 1 + check_bit(self.read(0x2000), 2) * 31
-
-        return address
-
-    @ppuaddr.setter
-    def ppuaddr(self, value):
-        if self._latch_toggle:
-            self._ppuaddr <<= 8
-            self._ppuaddr |= value
-        else:
-            self._ppuaddr = value
-        self._latch_toggle = not self._latch_toggle
-
     def update_palette(self):
         self.palette[0][0] = self.data[0x3F00]
         self.palette[0][1] = self.data[0x3F01]
