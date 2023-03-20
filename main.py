@@ -10,8 +10,8 @@ WIDTH = 256
 HEIGHT = 240
 
 try:
-    # r = ROM(sys.argv[1])
-    r = ROM("dk.nes")
+    r = ROM(sys.argv[1])
+    # r = ROM("dk.nes")
 except Exception:
     print("Cannot open file")
     exit()
@@ -32,3 +32,6 @@ while cpu.PC > 0:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             sys.exit(0)
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                pygame.quit()

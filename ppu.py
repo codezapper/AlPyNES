@@ -100,6 +100,8 @@ class PPU:
         self.c = 0
         self.vram.update_palette()
         self.patterns = []
+        self.framebuffer = pygame.surfarray.pixels2d(self.screen)
+        self.during_vblank = False
         self.attributes = [0] * 1024
         self.nametables = [0, 1, 2, 3]
         self.nametables[0] = [0] * 1024
@@ -152,48 +154,14 @@ class PPU:
         if col != 0:
             self.screen.set_at((self.start_x + self.current_x, self.current_scanline), Color((255, 255, 255)))
 
-    def fetch_tile_no(self, nametable_id):
-        base_address = 0x2000 + (nametable_id * 0x400)
-        tile_address = base_address + self.current_scanline + self.current_x + self.start_x
-        int(self.start_x / 8) + (self.current_scanline * 8)
-        t = self.vram.read(tile_address)
-        return self.vram.read(tile_address)
-    
-    def clock(self, cpu_cycles):
-        bg_bank = 1 if check_bit(self.ppuctrl, BG_TILE_SELECT) else 0
-        nametable_id = (check_bit(self.ppuctrl, 1) << 1) | check_bit(self.ppuctrl, 0)
-        if (self.current_scanline == -1):
-            self.screen.fill((0,0,0))
-            self.current_tile = self.fetch_tile_no(nametable_id)
-            self.current_scanline += 1
-        elif 0 <= self.current_scanline <= 256:
-            self.show_tile(bg_bank, self.current_tile)
-            self.current_x += 1
-            if self.current_x >= 8:
-                self.current_tile = self.fetch_tile_no(nametable_id)
-                self.current_x = 0
-                self.start_x += 8
-                if self.start_x >= WIDTH:
-                    self.start_x = 0
-                    self.current_scanline += 1
-        elif 241 <= self.current_scanline <= 260:
-            self.ppustatus = set_bit(self._ppustatus, VBLANK_BIT)
-            self.current_scanline += 1
+    def show_tile_pos(self, bank, tile_no, start_x, start_y):
+        start_x = start_x * 8
+        start_y = start_y * 8
 
-        if self.current_scanline > 260:
-            self.current_scanline = -1
-            pygame.display.flip()
-
-
-        # self.screen.set_at((50, 50), Color(255, 255, 255))
-        # pygame.display.flip()
-        # self.ppustatus = set_bit(self.ppustatus, VBLANK_BIT)
-        # self.ram.interrupt = NMI_INT
-
-        # pxarray = pygame.surfarray.pixels2d(self.screen)
-        # for i in range(len(framebuffer)):
-        #     framebuffer[i] = [128] * 240
-
+        for y, row in enumerate(self.patterns[bank][tile_no]):
+            for x, col in enumerate(row):
+                if col != 0:
+                    self.framebuffer[x + start_x][y + start_y] = Color(255, 255, 255)
         # for row in range(256):
         #     for col in range(128):
         #         # adr = (r / 8 * 0x100) + (r % 8) + (col / 8) * 0x10
@@ -204,6 +172,59 @@ class PPU:
         # pxarray[100, 100] = Color(0, 255, 0)
         # pygame.display.flip()
 
+
+        # for y, row in enumerate(self.patterns[bank][tile_no]):
+        #     for x, col in enumerate(row):
+        #         if col != 0:
+        #             self.screen.set_at((start_x+x, start_y+y), Color((255, 255, 255)))
+
+
+    def fetch_tile_no(self, nametable_id):
+        base_address = 0x2000 + (nametable_id * 0x400)
+        tile_address = base_address + self.current_scanline + self.current_x + self.start_x
+        int(self.start_x / 8) + (self.current_scanline * 8)
+        t = self.vram.read(tile_address)
+        return self.vram.read(tile_address)
+
+    def draw_background(self, nametable_id):
+        nametable_address = 0x2000 + nametable_id * 0x400
+        bg_bank = 1 if check_bit(self.ppuctrl, BG_TILE_SELECT) else 0
+
+        for col in range(32):
+            for row in range(30):
+                tile_no = self.vram.read(nametable_address + (row * 32) + col)
+                self.show_tile_pos(bg_bank, tile_no, col, row)
+
+    def clock(self, cpu_cycles):
+        nametable_id = (check_bit(self.ppuctrl, 1) << 1) | check_bit(self.ppuctrl, 0)
+        if (self.current_scanline == -1):
+            self.current_scanline += 1
+            self.ppustatus = clear_bit(self._ppustatus, VBLANK_BIT)
+            self.ram.interrupt = -1
+            self.screen.fill((0,0,0))
+            self.draw_background(nametable_id)
+            pygame.display.flip()
+        #     self.screen.fill((0,0,0))
+        #     self.current_tile = self.fetch_tile_no(nametable_id)
+        #     self.current_scanline += 1
+        elif 0 <= self.current_scanline <= 256:
+            self.current_scanline += 1
+        #     self.show_tile(bg_bank, self.current_tile)
+        #     self.current_x += 1
+        #     if self.current_x >= 8:
+        #         self.current_tile = self.fetch_tile_no(nametable_id)
+        #         self.current_x = 0
+        #         self.start_x += 8
+        #         if self.start_x >= WIDTH:
+        #             self.start_x = 0
+        #             self.current_scanline += 1
+        elif 241 <= self.current_scanline <= 260:
+            self.ppustatus = set_bit(self._ppustatus, VBLANK_BIT)
+            if (not self.during_vblank) and (self.ppuctrl & 0x80):
+                self.ram.interrupt = NMI_INT
+            self.current_scanline += 1
+        elif self.current_scanline > 260:
+            self.current_scanline = -1
 
     @property
     def ppuctrl(self):

@@ -192,14 +192,13 @@ class CPU:
             if self.ram.interrupt in {NMI_INT, IRQ_INT}:
                 if self.interrupt_count >= 6:
                     self.interrupt_count = 0
+                    if self.ram.interrupt == NMI_INT:
+                        self.NMI()
+                    else:
+                        self.IRQ()
+                    self.interrupt_handled = True
                     return True
                 self.interrupt_count += 1
-
-                if self.ram.interrupt == NMI_INT:
-                    self.NMI()
-                else:
-                    self.IRQ()
-                self.interrupt_handled = True
 
     def clock(self):
         self.handle_interrupt()
@@ -247,7 +246,7 @@ class CPU:
                 address &= 0x07FF
 
             if (address == 0x4016):
-                pass
+                return 0
                 # TODO : handle controller
                 # if (poll_controller1 >= 0) {
                 #     ret = readController1(poll_controller1++)
@@ -1001,6 +1000,22 @@ class CPU:
         self.PS = clear_bit(self.PS, self.B4)
 
         self.PC = (self.ram.read(0xFFFB) << 8) | self.ram.read(0xFFFA)
+
+        logline = "0x{:04X}  {:02X} {:02X} {:02X}  {:03s}{:28s}A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}".format(
+            self.PC,
+            999,
+            -1,
+            -1,
+            "NMI",
+            "",
+            self.A,
+            self.X,
+            self.Y,
+            self.PS,
+            self.SP
+        )
+
+        print(logline)
 
     def IRQ(self):
         if (check_bit(self.PS, self.ID) == 0):
