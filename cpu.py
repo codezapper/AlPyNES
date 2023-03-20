@@ -212,7 +212,7 @@ class CPU:
         first = (self.ram.read(self.PC + 1))
         second = (self.ram.read(self.PC + 2))
 
-        self.log_clock(opcode_id, first, second)
+        # self.log_clock(opcode_id, first, second)
 
         getattr(self, opcode.name)(first, second, opcode.mode)
 
@@ -1001,21 +1001,21 @@ class CPU:
 
         self.PC = (self.ram.read(0xFFFB) << 8) | self.ram.read(0xFFFA)
 
-        logline = "0x{:04X}  {:02X} {:02X} {:02X}  {:03s}{:28s}A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}".format(
-            self.PC,
-            999,
-            -1,
-            -1,
-            "NMI",
-            "",
-            self.A,
-            self.X,
-            self.Y,
-            self.PS,
-            self.SP
-        )
+        # logline = "0x{:04X}  {:02X} {:02X} {:02X}  {:03s}{:28s}A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}".format(
+        #     self.PC,
+        #     999,
+        #     -1,
+        #     -1,
+        #     "NMI",
+        #     "",
+        #     self.A,
+        #     self.X,
+        #     self.Y,
+        #     self.PS,
+        #     self.SP
+        # )
 
-        print(logline)
+        # print(logline)
 
     def IRQ(self):
         if (check_bit(self.PS, self.ID) == 0):

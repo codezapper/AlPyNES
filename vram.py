@@ -22,8 +22,6 @@ class VRAM:
         # Mirror memory
         while (address > 0x3FFF):
             address -= 0x3FF
-        if value in [0x62, 62]:
-            a = 0
         self.data[address] = value
 
     def read(self, address):

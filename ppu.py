@@ -100,7 +100,7 @@ class PPU:
         self.c = 0
         self.vram.update_palette()
         self.patterns = []
-        self.framebuffer = pygame.surfarray.pixels2d(self.screen)
+        self.framebuffer = pixels2d(self.screen)
         self.during_vblank = False
         self.attributes = [0] * 1024
         self.nametables = [0, 1, 2, 3]
@@ -203,7 +203,6 @@ class PPU:
             self.ram.interrupt = -1
             self.screen.fill((0,0,0))
             self.draw_background(nametable_id)
-            pygame.display.flip()
         #     self.screen.fill((0,0,0))
         #     self.current_tile = self.fetch_tile_no(nametable_id)
         #     self.current_scanline += 1
@@ -221,6 +220,7 @@ class PPU:
         elif 241 <= self.current_scanline <= 260:
             self.ppustatus = set_bit(self._ppustatus, VBLANK_BIT)
             if (not self.during_vblank) and (self.ppuctrl & 0x80):
+                pygame.display.flip()
                 self.ram.interrupt = NMI_INT
             self.current_scanline += 1
         elif self.current_scanline > 260:

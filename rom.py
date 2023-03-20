@@ -1,3 +1,5 @@
+from utils import check_bit
+
 class ROM:
     def __init__(self, _filename):
         self._filename = _filename
@@ -33,12 +35,12 @@ class ROM:
         except FileNotFoundError:
             return
 
-        self.mirroring = self.header["flag6"] & 1
-        self.has_prg_ram = self.header["flag6"] & 2
-        self.has_trainer = self.header["flag6"] & 3
-        self.ignore_mirroring_control = self.header["flag6"] & 4
-        self.vs_unisystem = self.header["flag7"] & 1
-        self.playchoice10 = self.header["flag7"] & 2
+        self.mirroring = check_bit(self.header["flag6"], 1)
+        self.has_prg_ram = check_bit(self.header["flag6"], 2)
+        self.has_trainer = check_bit(self.header["flag6"], 3)
+        self.ignore_mirroring_control = check_bit(self.header["flag6"], 4)
+        self.vs_unisystem = check_bit(self.header["flag7"], 1)
+        self.playchoice10 = check_bit(self.header["flag7"], 2)
         self.is_nes20 = (((self.header["flag7"] & 3) | (self.header["flag7"] & 4)) == 2)
         self.prg_ram_size = self.header["flag8"]
         self.tv_system = self.header["flag9"] & 1  # 0: NTSC, 1: PAL
@@ -60,5 +62,6 @@ class ROM:
             start_prg += 512
         end_prg = start_prg + (16384 * self.header["prg_size"])
 
+        end_chr = end_prg + (self.header["chr_size"] * 8192)
         self.prg_rom = self.input_array[start_prg: end_prg]
-        self.chr_rom = self.input_array[end_prg: end_prg + (self.header["chr_size"] * 8192)]
+        self.chr_rom = self.input_array[end_prg: end_chr]
