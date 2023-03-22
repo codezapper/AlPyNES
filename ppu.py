@@ -154,30 +154,24 @@ class PPU:
         if col != 0:
             self.screen.set_at((self.start_x + self.current_x, self.current_scanline), Color((255, 255, 255)))
 
-    def show_tile_pos(self, bank, tile_no, start_x, start_y):
-        start_x = start_x * 8
-        start_y = start_y * 8
+    def show_tile_pos(self, bank, tile_no, start_col, start_row, palette_address):
+        start_x = start_col * 8
+        start_y = start_row * 8
+
+        block_x = int(start_col / 4)
+        block_y = int(start_row / 4)
+
+        attr_addr = int(block_y * 8) + block_x
+        attr_byte = self.vram.read(palette_address + attr_addr)
+
+        block_id = int(((start_col % 4) / 2) + (((start_row  % 4) / 2) * 2))
+        which_palette = (attr_byte >> (block_id * 2)) & 0x03
+
 
         for y, row in enumerate(self.patterns[bank][tile_no]):
             for x, col in enumerate(row):
-                if col != 0:
-                    self.framebuffer[x + start_x][y + start_y] = Color(255, 255, 255)
-        # for row in range(256):
-        #     for col in range(128):
-        #         # adr = (r / 8 * 0x100) + (r % 8) + (col / 8) * 0x10
-        #         # pixel = ((self.vram.read(adr) >> (7-(col % 8))) & 1) + ((self.vram.read(adr + 8) >> (7-(col % 8))) & 1) * 2
-        #         pxarray[row][col] = Color(128, 128, 128)
-                # pxarray[(row * 128 * 3) + (col * 3) + 1] = 128
-                # pxarray[(row * 128 * 3) + (col * 3) + 2] = 128
-        # pxarray[100, 100] = Color(0, 255, 0)
-        # pygame.display.flip()
-
-
-        # for y, row in enumerate(self.patterns[bank][tile_no]):
-        #     for x, col in enumerate(row):
-        #         if col != 0:
-        #             self.screen.set_at((start_x+x, start_y+y), Color((255, 255, 255)))
-
+                    color = self.vram._PALETTE[self.vram.palette[which_palette][col]]
+                    self.framebuffer[x + start_x][y + start_y] = Color([255, color[0], color[1], color[2]])
 
     def fetch_tile_no(self, nametable_id):
         base_address = 0x2000 + (nametable_id * 0x400)
@@ -189,11 +183,12 @@ class PPU:
     def draw_background(self, nametable_id):
         nametable_address = 0x2000 + nametable_id * 0x400
         bg_bank = 1 if check_bit(self.ppuctrl, BG_TILE_SELECT) else 0
+        palette_address = 0x27C0 - (0x400 * bg_bank)
 
         for col in range(32):
             for row in range(30):
                 tile_no = self.vram.read(nametable_address + (row * 32) + col)
-                self.show_tile_pos(bg_bank, tile_no, col, row)
+                self.show_tile_pos(bg_bank, tile_no, col, row, palette_address)
 
     def clock(self, cpu_cycles):
         nametable_id = (check_bit(self.ppuctrl, 1) << 1) | check_bit(self.ppuctrl, 0)
@@ -203,20 +198,8 @@ class PPU:
             self.ram.interrupt = -1
             self.screen.fill((0,0,0))
             self.draw_background(nametable_id)
-        #     self.screen.fill((0,0,0))
-        #     self.current_tile = self.fetch_tile_no(nametable_id)
-        #     self.current_scanline += 1
         elif 0 <= self.current_scanline <= 256:
             self.current_scanline += 1
-        #     self.show_tile(bg_bank, self.current_tile)
-        #     self.current_x += 1
-        #     if self.current_x >= 8:
-        #         self.current_tile = self.fetch_tile_no(nametable_id)
-        #         self.current_x = 0
-        #         self.start_x += 8
-        #         if self.start_x >= WIDTH:
-        #             self.start_x = 0
-        #             self.current_scanline += 1
         elif 241 <= self.current_scanline <= 260:
             self.ppustatus = set_bit(self._ppustatus, VBLANK_BIT)
             if (not self.during_vblank) and (self.ppuctrl & 0x80):
