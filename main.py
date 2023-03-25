@@ -25,13 +25,16 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 cpu = CPU(sram)
 
 ppu = PPU(sram, svram, screen)
+import cProfile
 
 while cpu.PC > 0:
     cpu.clock()
-    ppu.clock(1)
+
+    ppu.clock(1) 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             sys.exit(0)
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 pygame.quit()
+                sys.exit(0)
