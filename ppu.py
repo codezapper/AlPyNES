@@ -94,6 +94,9 @@ class PPU:
         self.current_tile = -1
         self.start_x = 0
         self.current_x = 0
+        self.current_y = 0
+        self.tile_x = 0
+        self.tile_y = 0
         self.current_cycle = 0
         self.current_frame = 0
         self.screen = screen
@@ -149,7 +152,7 @@ class PPU:
                 current_index += 2
 
     def show_tile(self, bank, tile_no):
-        row = self.patterns[0][tile_no][self.current_scanline % 8]
+        row = self.patterns[0][tile_no][self.current_self.tile_y]
         col = row[self.current_x]
         if col != 0:
             self.screen.set_at((self.start_x + self.current_x, self.current_scanline), Color((255, 255, 255)))
@@ -198,7 +201,6 @@ class PPU:
         start_col = int(x / 32)
         tile_no = self.vram.read(nametable_address + (start_row * 32) + start_col)
 
-        start_x = int(x/4)
         start_y = int(y/4)
 
         block_x = int(start_col / 4)
@@ -214,7 +216,7 @@ class PPU:
         col = row[tile_x]
         color = self.vram._PALETTE[self.vram.palette[which_palette][col]]
 
-        self.framebuffer[tile_x + start_x][tile_y + start_y] = Color([255, color[0], color[1], color[2]])
+        self.framebuffer[tile_x + self.start_x][tile_y + start_y] = Color([255, color[0], color[1], color[2]])
 
     def draw_background(self, nametable_id):
         nametable_address = 0x2000 + nametable_id * 0x400
@@ -222,59 +224,59 @@ class PPU:
         palette_address = 0x27C0 - (0x400 * bank)
 
         scanline = self.current_scanline
-        start_row = int(scanline / 8)
+        start_row = int(scanline >> 3)
         if start_row >= 30:
             return
-        start_col = int(self.current_x / 8)
+        start_col = int(self.current_x >> 3)
 
-        # for start_col in range(32):
-        # for start_row in range(30):
         tile_no = self.vram.read(nametable_address + (start_row * 32) + start_col)
-        start_x = (self.current_x // 8) * 8
-        start_y = (self.current_scanline // 8) * 8
-        if ((scanline % 8) + start_y) >= HEIGHT:
-            return
 
-        block_x = int(start_col / 4)
-        block_y = int(start_row / 4)
+        block_x = int(start_col >> 2)
+        block_y = int(start_row >> 2)
 
-        attr_addr = int(block_y * 8) + block_x
+        attr_addr = int(block_y << 3) + block_x
         attr_byte = self.vram.read(palette_address + attr_addr)
 
-        block_id = int(((start_col % 4) / 2) + (((start_row  % 4) / 2) * 2))
-        which_palette = (attr_byte >> (block_id * 2)) & 0x03
+        block_id = int(((start_col % 4) >> 1) + (((start_row  % 4) >> 1) << 1))
+        which_palette = (attr_byte >> (block_id << 1)) & 0x03
 
 
-        row = self.patterns[bank][tile_no][scanline % 8]
-        col = row[self.current_x % 8]
+        row = self.patterns[bank][tile_no][self.tile_y]
+        col = row[self.tile_x]
 
         color = self.vram._PALETTE[self.vram.palette[which_palette][col]]
-        # print(start_y, (scanline % 8))
-        self.framebuffer[(self.current_x % 8) + start_x][(scanline % 8) + start_y] = Color([255, color[0], color[1], color[2]])
+        self.framebuffer[(self.tile_x) + self.start_x][self.current_y] = Color([255, color[0], color[1], color[2]])
 
     def clock(self, cpu_cycles):
         nametable_id = (check_bit(self.ppuctrl, 1) << 1) | check_bit(self.ppuctrl, 0)
         self.current_cycle += 1
         self.current_x += 1
-        # self.current_scanline += 1
         if self.current_x >= WIDTH:
             self.current_x = 0
+            self.start_x = 0
             self.current_scanline += 1
+            self.tile_y += 1
+            if self.tile_y > 7:
+                self.tile_y = 0
+            self.current_y = (self.tile_y + ((self.current_scanline >> 3) << 3)) % 240
         if (self.current_scanline == -1):
-            # self.screen.fill((0,0,0))
             pygame.display.flip()
             self.ppustatus = clear_bit(self._ppustatus, VBLANK_BIT)
             self.ram.interrupt = -1
         elif 0 <= self.current_scanline <= 256:
-            # pass
+            if self.tile_x > 7:
+                self.tile_x = 0
+                self.start_x += 8
+                if self.start_x >= WIDTH:
+                    self.start_x = 0
             self.draw_background(nametable_id)
+            self.tile_x += 1
         elif 241 <= self.current_scanline <= 260:
             self.ppustatus = set_bit(self._ppustatus, VBLANK_BIT)
             if (not self.during_vblank) and (self.ppuctrl & 0x80):
                 self.ram.interrupt = NMI_INT
         elif self.current_scanline > 260:
             self.current_scanline = -1
-                # self.draw_background(nametable_id)
 
     @property
     def ppuctrl(self):
