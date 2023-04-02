@@ -263,7 +263,7 @@ class PPU:
             pygame.display.flip()
             self.ppustatus = clear_bit(self._ppustatus, VBLANK_BIT)
             self.ram.interrupt = -1
-        elif 0 <= self.current_scanline <= 256:
+        elif 0 <= self.current_scanline <= 240:
             if self.tile_x > 7:
                 self.tile_x = 0
                 self.start_x += 8
@@ -273,7 +273,7 @@ class PPU:
             self.tile_x += 1
         elif 241 <= self.current_scanline <= 260:
             self.ppustatus = set_bit(self._ppustatus, VBLANK_BIT)
-            if (not self.during_vblank) and (self.ppuctrl & 0x80):
+            if (not self.during_vblank) and (self.ppuctrl & 0x80) and (self.ram.interrupt != NMI_INT):
                 self.ram.interrupt = NMI_INT
         elif self.current_scanline > 260:
             self.current_scanline = -1

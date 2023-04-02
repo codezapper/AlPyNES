@@ -35,7 +35,7 @@ class ROM:
         except FileNotFoundError:
             return
 
-        self.mirroring = check_bit(self.header["flag6"], 1)
+        self.mirroring = check_bit(self.header["flag6"], 0)
         self.has_prg_ram = check_bit(self.header["flag6"], 2)
         self.has_trainer = check_bit(self.header["flag6"], 3)
         self.ignore_mirroring_control = check_bit(self.header["flag6"], 4)
@@ -60,8 +60,18 @@ class ROM:
 
         if self.has_trainer:
             start_prg += 512
-        end_prg = start_prg + (16384 * self.header["prg_size"])
+
+        self.prg_rom = []
+        if (self.header["prg_size"] == 1):
+            end_prg = start_prg + 16384
+            self.prg_rom.append(self.input_array[start_prg: end_prg])
+            self.prg_rom.append(self.input_array[start_prg: end_prg])
+        else:
+            end_prg = start_prg + 16384
+            self.prg_rom.append(self.input_array[start_prg: end_prg])
+            start_prg = end_prg
+            end_prg = start_prg + 16384
+            self.prg_rom.append(self.input_array[start_prg: end_prg])
 
         end_chr = end_prg + (self.header["chr_size"] * 8192)
-        self.prg_rom = self.input_array[start_prg: end_prg]
         self.chr_rom = self.input_array[end_prg: end_chr]

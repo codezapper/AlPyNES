@@ -5,8 +5,8 @@ from utils import check_bit
 class RAM:
     def __init__(self, prg_rom, vram):
         self.data = [0] * 0xFFFF
-        self.data[0x8000: (0x8000 + len(prg_rom))] = prg_rom
-        self.data[0xC000: (0xC000 + len(prg_rom))] = prg_rom
+        self.data[0x8000: (0x8000 + len(prg_rom))] = prg_rom[0]
+        self.data[0xC000: (0xC000 + len(prg_rom))] = prg_rom[1]
         self._interrupt = -1
         self.vram = vram
         self._ppuaddr = 0
